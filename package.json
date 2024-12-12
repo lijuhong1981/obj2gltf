@@ -1,6 +1,6 @@
 {
   "name": "@lijuhong1981/obj2gltf",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "convert obj model to gltf model, can works in the web browser.",
   "type": "module",
   "main": "bin/obj2gltf.min.js",
@@ -21,15 +21,16 @@
   },
   "homepage": "https://github.com/lijuhong1981/obj2gltf#readme",
   "dependencies": {
-    "@lijuhong1981/jsload": "^1.2.31",
-    "cesium": "^1.124.0"
+    "@lijuhong1981/jsload": "^1.2.31"
   },
   "devDependencies": {
-    "bluebird": "^3.7.2",
-    "path": "^0.12.7",
     "@rollup/plugin-commonjs": "^28.0.1",
     "@rollup/plugin-node-resolve": "^15.3.0",
     "@rollup/plugin-terser": "^0.4.4",
+    "bluebird": "^3.7.2",
+    "earcut": "^3.0.0",
+    "mersenne-twister": "^1.1.0",
+    "path": "^0.12.7",
     "rollup": "^4.28.1",
     "rollup-plugin-cleanup": "^3.2.1"
   }
