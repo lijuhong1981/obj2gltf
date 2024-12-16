@@ -21,16 +21,16 @@
   },
   "homepage": "https://github.com/lijuhong1981/obj2gltf#readme",
   "dependencies": {
-    "@lijuhong1981/jsload": "^1.2.31"
+    "@lijuhong1981/jsload": "^1.2.31",
+    "bluebird": "^3.7.2",
+    "earcut": "^3.0.0",
+    "mersenne-twister": "^1.1.0",
+    "path": "^0.12.7"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^28.0.1",
     "@rollup/plugin-node-resolve": "^15.3.0",
     "@rollup/plugin-terser": "^0.4.4",
-    "bluebird": "^3.7.2",
-    "earcut": "^3.0.0",
-    "mersenne-twister": "^1.1.0",
-    "path": "^0.12.7",
     "rollup": "^4.28.1",
     "rollup-plugin-cleanup": "^3.2.1"
   }
