@@ -1,6 +1,6 @@
 {
   "name": "@lijuhong1981/obj2gltf",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "convert obj model to gltf model, can works in the web browser.",
   "type": "module",
   "main": "bin/obj2gltf.min.js",
