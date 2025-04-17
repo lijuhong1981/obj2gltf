@@ -6460,6 +6460,7 @@ function requireBluebird () {
 		    ic();
 		    ic();
 		    return obj;
+		    // eval(obj);
 		}
 
 		var rident = /^[a-z$_][a-z$_0-9]*$/i;
@@ -6683,34 +6684,6 @@ function requireBluebird () {
 }
 
 var bluebirdExports = requireBluebird();
-
-/**
- * Returns the first parameter if not undefined, otherwise the second parameter.
- * Useful for setting a default value for a parameter.
- *
- * @function
- *
- * @param {*} a
- * @param {*} b
- * @returns {*} Returns the first parameter if not undefined, otherwise the second parameter.
- *
- * @example
- * param = Cesium.defaultValue(param, 'default');
- */
-function defaultValue(a, b) {
-  if (a !== undefined && a !== null) {
-    return a;
-  }
-  return b;
-}
-
-/**
- * A frozen empty object that can be used as the default value for options passed as
- * an object literal.
- * @type {object}
- * @memberof defaultValue
- */
-defaultValue.EMPTY_OBJECT = Object.freeze({});
 
 /**
  * @function
@@ -7688,12 +7661,11 @@ ComponentDatatype.createArrayBufferView = function (
   }
   //>>includeEnd('debug');
 
-  byteOffset = defaultValue(byteOffset, 0);
-  length = defaultValue(
-    length,
+  byteOffset = byteOffset ?? 0;
+  length =
+    length ??
     (buffer.byteLength - byteOffset) /
-      ComponentDatatype.getSizeInBytes(componentDatatype),
-  );
+      ComponentDatatype.getSizeInBytes(componentDatatype);
 
   switch (componentDatatype) {
     case ComponentDatatype.BYTE:
@@ -7874,6 +7846,26 @@ function Texture() {
   this.pixels = undefined;
   this.width = undefined;
   this.height = undefined;
+}
+
+/**
+ * Returns the first parameter if not undefined, otherwise the second parameter.
+ * Useful for setting a default value for a parameter.
+ *
+ * @function
+ *
+ * @param {*} a
+ * @param {*} b
+ * @returns {*} Returns the first parameter if not undefined, otherwise the second parameter.
+ *
+ * @example
+ * param = Cesium.defaultValue(param, 'default');
+ */
+function defaultValue(a, b) {
+  if (a !== undefined && a !== null) {
+    return a;
+  }
+  return b;
 }
 
 // const defined = Cesium.defined;
@@ -8717,14 +8709,16 @@ CesiumMath.FOUR_GIGABYTES = 4 * 1024 * 1024 * 1024;
  * @param {number} value The value to return the sign of.
  * @returns {number} The sign of value.
  */
-CesiumMath.sign = defaultValue(Math.sign, function sign(value) {
-  value = +value; // coerce to number
-  if (value === 0 || value !== value) {
-    // zero or NaN
-    return value;
-  }
-  return value > 0 ? 1 : -1;
-});
+CesiumMath.sign =
+  Math.sign ??
+  function sign(value) {
+    value = +value; // coerce to number
+    if (value === 0 || value !== value) {
+      // zero or NaN
+      return value;
+    }
+    return value > 0 ? 1 : -1;
+  };
 
 /**
  * Returns 1.0 if the given value is positive or zero, and -1.0 if it is negative.
@@ -8746,7 +8740,7 @@ CesiumMath.signNotZero = function (value) {
  * @see CesiumMath.fromSNorm
  */
 CesiumMath.toSNorm = function (value, rangeMaximum) {
-  rangeMaximum = defaultValue(rangeMaximum, 255);
+  rangeMaximum = rangeMaximum ?? 255;
   return Math.round(
     (CesiumMath.clamp(value, -1.0, 1.0) * 0.5 + 0.5) * rangeMaximum,
   );
@@ -8761,7 +8755,7 @@ CesiumMath.toSNorm = function (value, rangeMaximum) {
  * @see CesiumMath.toSNorm
  */
 CesiumMath.fromSNorm = function (value, rangeMaximum) {
-  rangeMaximum = defaultValue(rangeMaximum, 255);
+  rangeMaximum = rangeMaximum ?? 255;
   return (
     (CesiumMath.clamp(value, 0.0, rangeMaximum) / rangeMaximum) * 2.0 - 1.0
   );
@@ -8803,9 +8797,11 @@ CesiumMath.normalize = function (value, rangeMinimum, rangeMaximum) {
  * @param {number} value The number whose hyperbolic sine is to be returned.
  * @returns {number} The hyperbolic sine of <code>value</code>.
  */
-CesiumMath.sinh = defaultValue(Math.sinh, function sinh(value) {
-  return (Math.exp(value) - Math.exp(-value)) / 2.0;
-});
+CesiumMath.sinh =
+  Math.sinh ??
+  function sinh(value) {
+    return (Math.exp(value) - Math.exp(-value)) / 2.0;
+  };
 
 /**
  * Returns the hyperbolic cosine of a number.
@@ -8827,9 +8823,11 @@ CesiumMath.sinh = defaultValue(Math.sinh, function sinh(value) {
  * @param {number} value The number whose hyperbolic cosine is to be returned.
  * @returns {number} The hyperbolic cosine of <code>value</code>.
  */
-CesiumMath.cosh = defaultValue(Math.cosh, function cosh(value) {
-  return (Math.exp(value) + Math.exp(-value)) / 2.0;
-});
+CesiumMath.cosh =
+  Math.cosh ??
+  function cosh(value) {
+    return (Math.exp(value) + Math.exp(-value)) / 2.0;
+  };
 
 /**
  * Computes the linear interpolation of two values.
@@ -9133,8 +9131,8 @@ CesiumMath.equalsEpsilon = function (
   }
   //>>includeEnd('debug');
 
-  relativeEpsilon = defaultValue(relativeEpsilon, 0.0);
-  absoluteEpsilon = defaultValue(absoluteEpsilon, relativeEpsilon);
+  relativeEpsilon = relativeEpsilon ?? 0.0;
+  absoluteEpsilon = absoluteEpsilon ?? relativeEpsilon;
   const absDiff = Math.abs(left - right);
   return (
     absDiff <= absoluteEpsilon ||
@@ -9297,7 +9295,7 @@ CesiumMath.factorial = function (n) {
  * const m = Cesium.Math.incrementWrap(10, 10, 0); // returns 0
  */
 CesiumMath.incrementWrap = function (n, maximumValue, minimumValue) {
-  minimumValue = defaultValue(minimumValue, 0.0);
+  minimumValue = minimumValue ?? 0.0;
 
   //>>includeStart('debug', pragmas.debug);
   if (!defined(n)) {
@@ -9543,10 +9541,12 @@ CesiumMath.logBase = function (number, base) {
  * @param {number} [number] The number.
  * @returns {number} The result.
  */
-CesiumMath.cbrt = defaultValue(Math.cbrt, function cbrt(number) {
-  const result = Math.pow(Math.abs(number), 1.0 / 3.0);
-  return number < 0.0 ? -result : result;
-});
+CesiumMath.cbrt =
+  Math.cbrt ??
+  function cbrt(number) {
+    const result = Math.pow(Math.abs(number), 1.0 / 3.0);
+    return number < 0.0 ? -result : result;
+  };
 
 /**
  * Finds the base 2 logarithm of a number.
@@ -9555,9 +9555,11 @@ CesiumMath.cbrt = defaultValue(Math.cbrt, function cbrt(number) {
  * @param {number} number The number.
  * @returns {number} The result.
  */
-CesiumMath.log2 = defaultValue(Math.log2, function log2(number) {
-  return Math.log(number) * Math.LOG2E;
-});
+CesiumMath.log2 =
+  Math.log2 ??
+  function log2(number) {
+    return Math.log(number) * Math.LOG2E;
+  };
 
 /**
  * Calculate the fog impact at a given distance. Useful for culling.
@@ -9640,7 +9642,7 @@ function clone(object, deep) {
     return object;
   }
 
-  deep = defaultValue(deep, false);
+  deep = deep ?? false;
 
   const result = new object.constructor();
   for (const propertyName in object) {
@@ -9688,7 +9690,7 @@ function clone(object, deep) {
  * @function
  */
 function combine(object1, object2, deep) {
-  deep = defaultValue(deep, false);
+  deep = deep ?? false;
 
   const result = {};
 
@@ -10729,21 +10731,21 @@ function Cartesian3(x, y, z) {
    * @type {number}
    * @default 0.0
    */
-  this.x = defaultValue(x, 0.0);
+  this.x = x ?? 0.0;
 
   /**
    * The Y component.
    * @type {number}
    * @default 0.0
    */
-  this.y = defaultValue(y, 0.0);
+  this.y = y ?? 0.0;
 
   /**
    * The Z component.
    * @type {number}
    * @default 0.0
    */
-  this.z = defaultValue(z, 0.0);
+  this.z = z ?? 0.0;
 }
 
 /**
@@ -10764,7 +10766,7 @@ Cartesian3.fromSpherical = function (spherical, result) {
 
   const clock = spherical.clock;
   const cone = spherical.cone;
-  const magnitude = defaultValue(spherical.magnitude, 1.0);
+  const magnitude = spherical.magnitude ?? 1.0;
   const radial = magnitude * Math.sin(cone);
   result.x = radial * Math.cos(clock);
   result.y = radial * Math.sin(clock);
@@ -10845,7 +10847,7 @@ Cartesian3.pack = function (value, array, startingIndex) {
   Check.defined("array", array);
   //>>includeEnd('debug');
 
-  startingIndex = defaultValue(startingIndex, 0);
+  startingIndex = startingIndex ?? 0;
 
   array[startingIndex++] = value.x;
   array[startingIndex++] = value.y;
@@ -10867,7 +10869,7 @@ Cartesian3.unpack = function (array, startingIndex, result) {
   Check.defined("array", array);
   //>>includeEnd('debug');
 
-  startingIndex = defaultValue(startingIndex, 0);
+  startingIndex = startingIndex ?? 0;
 
   if (!defined(result)) {
     result = new Cartesian3();
@@ -11631,7 +11633,7 @@ Cartesian3.fromRadians = function (
   Check.typeOf.number("latitude", latitude);
   //>>includeEnd('debug');
 
-  height = defaultValue(height, 0.0);
+  height = height ?? 0.0;
 
   const radiiSquared = !defined(ellipsoid)
     ? Cartesian3._ellipsoidRadiiSquared
@@ -11967,15 +11969,15 @@ function Matrix3(
   column1Row2,
   column2Row2,
 ) {
-  this[0] = defaultValue(column0Row0, 0.0);
-  this[1] = defaultValue(column0Row1, 0.0);
-  this[2] = defaultValue(column0Row2, 0.0);
-  this[3] = defaultValue(column1Row0, 0.0);
-  this[4] = defaultValue(column1Row1, 0.0);
-  this[5] = defaultValue(column1Row2, 0.0);
-  this[6] = defaultValue(column2Row0, 0.0);
-  this[7] = defaultValue(column2Row1, 0.0);
-  this[8] = defaultValue(column2Row2, 0.0);
+  this[0] = column0Row0 ?? 0.0;
+  this[1] = column0Row1 ?? 0.0;
+  this[2] = column0Row2 ?? 0.0;
+  this[3] = column1Row0 ?? 0.0;
+  this[4] = column1Row1 ?? 0.0;
+  this[5] = column1Row2 ?? 0.0;
+  this[6] = column2Row0 ?? 0.0;
+  this[7] = column2Row1 ?? 0.0;
+  this[8] = column2Row2 ?? 0.0;
 }
 
 /**
@@ -11999,7 +12001,7 @@ Matrix3.pack = function (value, array, startingIndex) {
   Check.defined("array", array);
   //>>includeEnd('debug');
 
-  startingIndex = defaultValue(startingIndex, 0);
+  startingIndex = startingIndex ?? 0;
 
   array[startingIndex++] = value[0];
   array[startingIndex++] = value[1];
@@ -12027,7 +12029,7 @@ Matrix3.unpack = function (array, startingIndex, result) {
   Check.defined("array", array);
   //>>includeEnd('debug');
 
-  startingIndex = defaultValue(startingIndex, 0);
+  startingIndex = startingIndex ?? 0;
 
   if (!defined(result)) {
     result = new Matrix3();
@@ -13568,7 +13570,7 @@ Matrix3.equals = function (left, right) {
  * @returns {boolean} <code>true</code> if left and right are within the provided epsilon, <code>false</code> otherwise.
  */
 Matrix3.equalsEpsilon = function (left, right, epsilon) {
-  epsilon = defaultValue(epsilon, 0);
+  epsilon = epsilon ?? 0;
 
   return (
     left === right ||
@@ -13777,28 +13779,28 @@ function Cartesian4(x, y, z, w) {
    * @type {number}
    * @default 0.0
    */
-  this.x = defaultValue(x, 0.0);
+  this.x = x ?? 0.0;
 
   /**
    * The Y component.
    * @type {number}
    * @default 0.0
    */
-  this.y = defaultValue(y, 0.0);
+  this.y = y ?? 0.0;
 
   /**
    * The Z component.
    * @type {number}
    * @default 0.0
    */
-  this.z = defaultValue(z, 0.0);
+  this.z = z ?? 0.0;
 
   /**
    * The W component.
    * @type {number}
    * @default 0.0
    */
-  this.w = defaultValue(w, 0.0);
+  this.w = w ?? 0.0;
 }
 
 /**
@@ -13890,7 +13892,7 @@ Cartesian4.pack = function (value, array, startingIndex) {
   Check.defined("array", array);
   //>>includeEnd('debug');
 
-  startingIndex = defaultValue(startingIndex, 0);
+  startingIndex = startingIndex ?? 0;
 
   array[startingIndex++] = value.x;
   array[startingIndex++] = value.y;
@@ -13913,7 +13915,7 @@ Cartesian4.unpack = function (array, startingIndex, result) {
   Check.defined("array", array);
   //>>includeEnd('debug');
 
-  startingIndex = defaultValue(startingIndex, 0);
+  startingIndex = startingIndex ?? 0;
 
   if (!defined(result)) {
     result = new Cartesian4();
@@ -14732,6 +14734,29 @@ Cartesian4.unpackFloat = function (packedFloat) {
 };
 
 /**
+ * Utilities helpful for setting a default value for a parameter.
+ *
+ * @namespace Frozen
+ */
+const Frozen = {};
+
+/**
+ * A frozen empty object that can be used as the default value for options passed as
+ * an object literal.
+ * @type {object}
+ * @memberof Frozen
+ */
+Frozen.EMPTY_OBJECT = Object.freeze({});
+
+/**
+ * A frozen empty array that can be used as the default value for options passed as
+ * an array literal.
+ * @type {array}
+ * @memberof Frozen
+ */
+Frozen.EMPTY_ARRAY = Object.freeze([]);
+
+/**
  * Constructs an exception object that is thrown due to an error that can occur at runtime, e.g.,
  * out of memory, could not compile shader, etc.  If a function may throw this
  * exception, the calling code should be prepared to catch it.
@@ -14857,22 +14882,22 @@ function Matrix4(
   column2Row3,
   column3Row3,
 ) {
-  this[0] = defaultValue(column0Row0, 0.0);
-  this[1] = defaultValue(column0Row1, 0.0);
-  this[2] = defaultValue(column0Row2, 0.0);
-  this[3] = defaultValue(column0Row3, 0.0);
-  this[4] = defaultValue(column1Row0, 0.0);
-  this[5] = defaultValue(column1Row1, 0.0);
-  this[6] = defaultValue(column1Row2, 0.0);
-  this[7] = defaultValue(column1Row3, 0.0);
-  this[8] = defaultValue(column2Row0, 0.0);
-  this[9] = defaultValue(column2Row1, 0.0);
-  this[10] = defaultValue(column2Row2, 0.0);
-  this[11] = defaultValue(column2Row3, 0.0);
-  this[12] = defaultValue(column3Row0, 0.0);
-  this[13] = defaultValue(column3Row1, 0.0);
-  this[14] = defaultValue(column3Row2, 0.0);
-  this[15] = defaultValue(column3Row3, 0.0);
+  this[0] = column0Row0 ?? 0.0;
+  this[1] = column0Row1 ?? 0.0;
+  this[2] = column0Row2 ?? 0.0;
+  this[3] = column0Row3 ?? 0.0;
+  this[4] = column1Row0 ?? 0.0;
+  this[5] = column1Row1 ?? 0.0;
+  this[6] = column1Row2 ?? 0.0;
+  this[7] = column1Row3 ?? 0.0;
+  this[8] = column2Row0 ?? 0.0;
+  this[9] = column2Row1 ?? 0.0;
+  this[10] = column2Row2 ?? 0.0;
+  this[11] = column2Row3 ?? 0.0;
+  this[12] = column3Row0 ?? 0.0;
+  this[13] = column3Row1 ?? 0.0;
+  this[14] = column3Row2 ?? 0.0;
+  this[15] = column3Row3 ?? 0.0;
 }
 
 /**
@@ -14896,7 +14921,7 @@ Matrix4.pack = function (value, array, startingIndex) {
   Check.defined("array", array);
   //>>includeEnd('debug');
 
-  startingIndex = defaultValue(startingIndex, 0);
+  startingIndex = startingIndex ?? 0;
 
   array[startingIndex++] = value[0];
   array[startingIndex++] = value[1];
@@ -14931,7 +14956,7 @@ Matrix4.unpack = function (array, startingIndex, result) {
   Check.defined("array", array);
   //>>includeEnd('debug');
 
-  startingIndex = defaultValue(startingIndex, 0);
+  startingIndex = startingIndex ?? 0;
 
   if (!defined(result)) {
     result = new Matrix4();
@@ -15175,7 +15200,7 @@ Matrix4.fromRotationTranslation = function (rotation, translation, result) {
   Check.typeOf.object("rotation", rotation);
   //>>includeEnd('debug');
 
-  translation = defaultValue(translation, Cartesian3.ZERO);
+  translation = translation ?? Cartesian3.ZERO;
 
   if (!defined(result)) {
     return new Matrix4(
@@ -15859,13 +15884,13 @@ Matrix4.computeViewportTransformation = function (
     result = new Matrix4();
   }
 
-  viewport = defaultValue(viewport, defaultValue.EMPTY_OBJECT);
-  const x = defaultValue(viewport.x, 0.0);
-  const y = defaultValue(viewport.y, 0.0);
-  const width = defaultValue(viewport.width, 0.0);
-  const height = defaultValue(viewport.height, 0.0);
-  nearDepthRange = defaultValue(nearDepthRange, 0.0);
-  farDepthRange = defaultValue(farDepthRange, 1.0);
+  viewport = viewport ?? Frozen.EMPTY_OBJECT;
+  const x = viewport.x ?? 0.0;
+  const y = viewport.y ?? 0.0;
+  const width = viewport.width ?? 0.0;
+  const height = viewport.height ?? 0.0;
+  nearDepthRange = nearDepthRange ?? 0.0;
+  farDepthRange = farDepthRange ?? 1.0;
 
   const halfWidth = width * 0.5;
   const halfHeight = height * 0.5;
@@ -17363,7 +17388,7 @@ Matrix4.equals = function (left, right) {
  * //Prints "Difference between both the matrices is not less than 0.1" on the console
  */
 Matrix4.equalsEpsilon = function (left, right, epsilon) {
-  epsilon = defaultValue(epsilon, 0);
+  epsilon = epsilon ?? 0;
 
   return (
     left === right ||
@@ -18148,14 +18173,14 @@ function Cartesian2(x, y) {
    * @type {number}
    * @default 0.0
    */
-  this.x = defaultValue(x, 0.0);
+  this.x = x ?? 0.0;
 
   /**
    * The Y component.
    * @type {number}
    * @default 0.0
    */
-  this.y = defaultValue(y, 0.0);
+  this.y = y ?? 0.0;
 }
 
 /**
@@ -18239,7 +18264,7 @@ Cartesian2.pack = function (value, array, startingIndex) {
   Check.defined("array", array);
   //>>includeEnd('debug');
 
-  startingIndex = defaultValue(startingIndex, 0);
+  startingIndex = startingIndex ?? 0;
 
   array[startingIndex++] = value.x;
   array[startingIndex] = value.y;
@@ -18260,7 +18285,7 @@ Cartesian2.unpack = function (array, startingIndex, result) {
   Check.defined("array", array);
   //>>includeEnd('debug');
 
-  startingIndex = defaultValue(startingIndex, 0);
+  startingIndex = startingIndex ?? 0;
 
   if (!defined(result)) {
     result = new Cartesian2();
@@ -18948,11 +18973,6 @@ Cartesian2.prototype.toString = function () {
   return `(${this.x}, ${this.y})`;
 };
 
-// import BoundingSphere from "./BoundingSphere.js";
-// import Cartesian2 from "./Cartesian2.js";
-// import Plane from "./Plane.js";
-// import Rectangle from "./Rectangle.js";
-
 /**
  * Creates an instance of an OrientedBoundingBox.
  * An OrientedBoundingBox of some object is a closed and convex rectangular cuboid. It can provide a tighter bounding volume than {@link BoundingSphere} or {@link AxisAlignedBoundingBox} in many cases.
@@ -18981,7 +19001,7 @@ function OrientedBoundingBox(center, halfAxes) {
    * @type {Cartesian3}
    * @default {@link Cartesian3.ZERO}
    */
-  this.center = Cartesian3.clone(defaultValue(center, Cartesian3.ZERO));
+  this.center = Cartesian3.clone(center ?? Cartesian3.ZERO);
   /**
    * The three orthogonal half-axes of the bounding box. Equivalently, the
    * transformation matrix, to rotate and scale a 2x2x2 cube centered at the
@@ -18989,7 +19009,7 @@ function OrientedBoundingBox(center, halfAxes) {
    * @type {Matrix3}
    * @default {@link Matrix3.ZERO}
    */
-  this.halfAxes = Matrix3.clone(defaultValue(halfAxes, Matrix3.ZERO));
+  this.halfAxes = Matrix3.clone(halfAxes ?? Matrix3.ZERO);
 }
 
 /**
@@ -19014,7 +19034,7 @@ OrientedBoundingBox.pack = function (value, array, startingIndex) {
   Check.defined("array", array);
   //>>includeEnd('debug');
 
-  startingIndex = defaultValue(startingIndex, 0);
+  startingIndex = startingIndex ?? 0;
 
   Cartesian3.pack(value.center, array, startingIndex);
   Matrix3.pack(value.halfAxes, array, startingIndex + Cartesian3.packedLength);
@@ -19035,7 +19055,7 @@ OrientedBoundingBox.unpack = function (array, startingIndex, result) {
   Check.defined("array", array);
   //>>includeEnd('debug');
 
-  startingIndex = defaultValue(startingIndex, 0);
+  startingIndex = startingIndex ?? 0;
 
   if (!defined(result)) {
     result = new OrientedBoundingBox();
@@ -19177,403 +19197,6 @@ OrientedBoundingBox.fromPoints = function (positions, result) {
   return result;
 };
 
-// const scratchOffset = new Cartesian3();
-// const scratchScale = new Cartesian3();
-// function fromPlaneExtents(
-//   planeOrigin,
-//   planeXAxis,
-//   planeYAxis,
-//   planeZAxis,
-//   minimumX,
-//   maximumX,
-//   minimumY,
-//   maximumY,
-//   minimumZ,
-//   maximumZ,
-//   result,
-// ) {
-//   //>>includeStart('debug', pragmas.debug);
-//   if (
-//     !defined(minimumX) ||
-//     !defined(maximumX) ||
-//     !defined(minimumY) ||
-//     !defined(maximumY) ||
-//     !defined(minimumZ) ||
-//     !defined(maximumZ)
-//   ) {
-//     throw new DeveloperError(
-//       "all extents (minimum/maximum X/Y/Z) are required.",
-//     );
-//   }
-//   //>>includeEnd('debug');
-
-//   if (!defined(result)) {
-//     result = new OrientedBoundingBox();
-//   }
-
-//   const halfAxes = result.halfAxes;
-//   Matrix3.setColumn(halfAxes, 0, planeXAxis, halfAxes);
-//   Matrix3.setColumn(halfAxes, 1, planeYAxis, halfAxes);
-//   Matrix3.setColumn(halfAxes, 2, planeZAxis, halfAxes);
-
-//   let centerOffset = scratchOffset;
-//   centerOffset.x = (minimumX + maximumX) / 2.0;
-//   centerOffset.y = (minimumY + maximumY) / 2.0;
-//   centerOffset.z = (minimumZ + maximumZ) / 2.0;
-
-//   const scale = scratchScale;
-//   scale.x = (maximumX - minimumX) / 2.0;
-//   scale.y = (maximumY - minimumY) / 2.0;
-//   scale.z = (maximumZ - minimumZ) / 2.0;
-
-//   const center = result.center;
-//   centerOffset = Matrix3.multiplyByVector(halfAxes, centerOffset, centerOffset);
-//   Cartesian3.add(planeOrigin, centerOffset, center);
-//   Matrix3.multiplyByScale(halfAxes, scale, halfAxes);
-
-//   return result;
-// }
-
-// const scratchRectangleCenterCartographic = new Cartographic();
-// const scratchRectangleCenter = new Cartesian3();
-// const scratchPerimeterCartographicNC = new Cartographic();
-// const scratchPerimeterCartographicNW = new Cartographic();
-// const scratchPerimeterCartographicCW = new Cartographic();
-// const scratchPerimeterCartographicSW = new Cartographic();
-// const scratchPerimeterCartographicSC = new Cartographic();
-// const scratchPerimeterCartesianNC = new Cartesian3();
-// const scratchPerimeterCartesianNW = new Cartesian3();
-// const scratchPerimeterCartesianCW = new Cartesian3();
-// const scratchPerimeterCartesianSW = new Cartesian3();
-// const scratchPerimeterCartesianSC = new Cartesian3();
-// const scratchPerimeterProjectedNC = new Cartesian2();
-// const scratchPerimeterProjectedNW = new Cartesian2();
-// const scratchPerimeterProjectedCW = new Cartesian2();
-// const scratchPerimeterProjectedSW = new Cartesian2();
-// const scratchPerimeterProjectedSC = new Cartesian2();
-
-// const scratchPlaneOrigin = new Cartesian3();
-// const scratchPlaneNormal = new Cartesian3();
-// const scratchPlaneXAxis = new Cartesian3();
-// const scratchHorizonCartesian = new Cartesian3();
-// const scratchHorizonProjected = new Cartesian2();
-// const scratchMaxY = new Cartesian3();
-// const scratchMinY = new Cartesian3();
-// const scratchZ = new Cartesian3();
-// const scratchPlane = new Plane(Cartesian3.UNIT_X, 0.0);
-
-/**
- * Computes an OrientedBoundingBox that bounds a {@link Rectangle} on the surface of an {@link Ellipsoid}.
- * There are no guarantees about the orientation of the bounding box.
- *
- * @param {Rectangle} rectangle The cartographic rectangle on the surface of the ellipsoid.
- * @param {number} [minimumHeight=0.0] The minimum height (elevation) within the tile.
- * @param {number} [maximumHeight=0.0] The maximum height (elevation) within the tile.
- * @param {Ellipsoid} [ellipsoid=Ellipsoid.default] The ellipsoid on which the rectangle is defined.
- * @param {OrientedBoundingBox} [result] The object onto which to store the result.
- * @returns {OrientedBoundingBox} The modified result parameter or a new OrientedBoundingBox instance if none was provided.
- *
- * @exception {DeveloperError} rectangle.width must be between 0 and 2 * pi.
- * @exception {DeveloperError} rectangle.height must be between 0 and pi.
- * @exception {DeveloperError} ellipsoid must be an ellipsoid of revolution (<code>radii.x == radii.y</code>)
- */
-// OrientedBoundingBox.fromRectangle = function (
-//   rectangle,
-//   minimumHeight,
-//   maximumHeight,
-//   ellipsoid,
-//   result,
-// ) {
-//   //>>includeStart('debug', pragmas.debug);
-//   if (!defined(rectangle)) {
-//     throw new DeveloperError("rectangle is required");
-//   }
-//   if (rectangle.width < 0.0 || rectangle.width > CesiumMath.TWO_PI) {
-//     throw new DeveloperError("Rectangle width must be between 0 and 2 * pi");
-//   }
-//   if (rectangle.height < 0.0 || rectangle.height > CesiumMath.PI) {
-//     throw new DeveloperError("Rectangle height must be between 0 and pi");
-//   }
-//   if (
-//     defined(ellipsoid) &&
-//     !CesiumMath.equalsEpsilon(
-//       ellipsoid.radii.x,
-//       ellipsoid.radii.y,
-//       CesiumMath.EPSILON15,
-//     )
-//   ) {
-//     throw new DeveloperError(
-//       "Ellipsoid must be an ellipsoid of revolution (radii.x == radii.y)",
-//     );
-//   }
-//   //>>includeEnd('debug');
-
-//   minimumHeight = defaultValue(minimumHeight, 0.0);
-//   maximumHeight = defaultValue(maximumHeight, 0.0);
-//   ellipsoid = defaultValue(ellipsoid, Ellipsoid.default);
-
-//   let minX, maxX, minY, maxY, minZ, maxZ, plane;
-
-//   if (rectangle.width <= CesiumMath.PI) {
-//     // The bounding box will be aligned with the tangent plane at the center of the rectangle.
-//     const tangentPointCartographic = Rectangle.center(
-//       rectangle,
-//       scratchRectangleCenterCartographic,
-//     );
-//     const tangentPoint = ellipsoid.cartographicToCartesian(
-//       tangentPointCartographic,
-//       scratchRectangleCenter,
-//     );
-//     const tangentPlane = new EllipsoidTangentPlane(tangentPoint, ellipsoid);
-//     plane = tangentPlane.plane;
-
-//     // If the rectangle spans the equator, CW is instead aligned with the equator (because it sticks out the farthest at the equator).
-//     const lonCenter = tangentPointCartographic.longitude;
-//     const latCenter =
-//       rectangle.south < 0.0 && rectangle.north > 0.0
-//         ? 0.0
-//         : tangentPointCartographic.latitude;
-
-//     // Compute XY extents using the rectangle at maximum height
-//     const perimeterCartographicNC = Cartographic.fromRadians(
-//       lonCenter,
-//       rectangle.north,
-//       maximumHeight,
-//       scratchPerimeterCartographicNC,
-//     );
-//     const perimeterCartographicNW = Cartographic.fromRadians(
-//       rectangle.west,
-//       rectangle.north,
-//       maximumHeight,
-//       scratchPerimeterCartographicNW,
-//     );
-//     const perimeterCartographicCW = Cartographic.fromRadians(
-//       rectangle.west,
-//       latCenter,
-//       maximumHeight,
-//       scratchPerimeterCartographicCW,
-//     );
-//     const perimeterCartographicSW = Cartographic.fromRadians(
-//       rectangle.west,
-//       rectangle.south,
-//       maximumHeight,
-//       scratchPerimeterCartographicSW,
-//     );
-//     const perimeterCartographicSC = Cartographic.fromRadians(
-//       lonCenter,
-//       rectangle.south,
-//       maximumHeight,
-//       scratchPerimeterCartographicSC,
-//     );
-
-//     const perimeterCartesianNC = ellipsoid.cartographicToCartesian(
-//       perimeterCartographicNC,
-//       scratchPerimeterCartesianNC,
-//     );
-//     let perimeterCartesianNW = ellipsoid.cartographicToCartesian(
-//       perimeterCartographicNW,
-//       scratchPerimeterCartesianNW,
-//     );
-//     const perimeterCartesianCW = ellipsoid.cartographicToCartesian(
-//       perimeterCartographicCW,
-//       scratchPerimeterCartesianCW,
-//     );
-//     let perimeterCartesianSW = ellipsoid.cartographicToCartesian(
-//       perimeterCartographicSW,
-//       scratchPerimeterCartesianSW,
-//     );
-//     const perimeterCartesianSC = ellipsoid.cartographicToCartesian(
-//       perimeterCartographicSC,
-//       scratchPerimeterCartesianSC,
-//     );
-
-//     const perimeterProjectedNC = tangentPlane.projectPointToNearestOnPlane(
-//       perimeterCartesianNC,
-//       scratchPerimeterProjectedNC,
-//     );
-//     const perimeterProjectedNW = tangentPlane.projectPointToNearestOnPlane(
-//       perimeterCartesianNW,
-//       scratchPerimeterProjectedNW,
-//     );
-//     const perimeterProjectedCW = tangentPlane.projectPointToNearestOnPlane(
-//       perimeterCartesianCW,
-//       scratchPerimeterProjectedCW,
-//     );
-//     const perimeterProjectedSW = tangentPlane.projectPointToNearestOnPlane(
-//       perimeterCartesianSW,
-//       scratchPerimeterProjectedSW,
-//     );
-//     const perimeterProjectedSC = tangentPlane.projectPointToNearestOnPlane(
-//       perimeterCartesianSC,
-//       scratchPerimeterProjectedSC,
-//     );
-
-//     minX = Math.min(
-//       perimeterProjectedNW.x,
-//       perimeterProjectedCW.x,
-//       perimeterProjectedSW.x,
-//     );
-//     maxX = -minX; // symmetrical
-
-//     maxY = Math.max(perimeterProjectedNW.y, perimeterProjectedNC.y);
-//     minY = Math.min(perimeterProjectedSW.y, perimeterProjectedSC.y);
-
-//     // Compute minimum Z using the rectangle at minimum height, since it will be deeper than the maximum height
-//     perimeterCartographicNW.height = perimeterCartographicSW.height =
-//       minimumHeight;
-//     perimeterCartesianNW = ellipsoid.cartographicToCartesian(
-//       perimeterCartographicNW,
-//       scratchPerimeterCartesianNW,
-//     );
-//     perimeterCartesianSW = ellipsoid.cartographicToCartesian(
-//       perimeterCartographicSW,
-//       scratchPerimeterCartesianSW,
-//     );
-
-//     minZ = Math.min(
-//       Plane.getPointDistance(plane, perimeterCartesianNW),
-//       Plane.getPointDistance(plane, perimeterCartesianSW),
-//     );
-//     maxZ = maximumHeight; // Since the tangent plane touches the surface at height = 0, this is okay
-
-//     return fromPlaneExtents(
-//       tangentPlane.origin,
-//       tangentPlane.xAxis,
-//       tangentPlane.yAxis,
-//       tangentPlane.zAxis,
-//       minX,
-//       maxX,
-//       minY,
-//       maxY,
-//       minZ,
-//       maxZ,
-//       result,
-//     );
-//   }
-
-//   // Handle the case where rectangle width is greater than PI (wraps around more than half the ellipsoid).
-//   const fullyAboveEquator = rectangle.south > 0.0;
-//   const fullyBelowEquator = rectangle.north < 0.0;
-//   const latitudeNearestToEquator = fullyAboveEquator
-//     ? rectangle.south
-//     : fullyBelowEquator
-//       ? rectangle.north
-//       : 0.0;
-//   const centerLongitude = Rectangle.center(
-//     rectangle,
-//     scratchRectangleCenterCartographic,
-//   ).longitude;
-
-//   // Plane is located at the rectangle's center longitude and the rectangle's latitude that is closest to the equator. It rotates around the Z axis.
-//   // This results in a better fit than the obb approach for smaller rectangles, which orients with the rectangle's center normal.
-//   const planeOrigin = Cartesian3.fromRadians(
-//     centerLongitude,
-//     latitudeNearestToEquator,
-//     maximumHeight,
-//     ellipsoid,
-//     scratchPlaneOrigin,
-//   );
-//   planeOrigin.z = 0.0; // center the plane on the equator to simpify plane normal calculation
-//   const isPole =
-//     Math.abs(planeOrigin.x) < CesiumMath.EPSILON10 &&
-//     Math.abs(planeOrigin.y) < CesiumMath.EPSILON10;
-//   const planeNormal = !isPole
-//     ? Cartesian3.normalize(planeOrigin, scratchPlaneNormal)
-//     : Cartesian3.UNIT_X;
-//   const planeYAxis = Cartesian3.UNIT_Z;
-//   const planeXAxis = Cartesian3.cross(
-//     planeNormal,
-//     planeYAxis,
-//     scratchPlaneXAxis,
-//   );
-//   plane = Plane.fromPointNormal(planeOrigin, planeNormal, scratchPlane);
-
-//   // Get the horizon point relative to the center. This will be the farthest extent in the plane's X dimension.
-//   const horizonCartesian = Cartesian3.fromRadians(
-//     centerLongitude + CesiumMath.PI_OVER_TWO,
-//     latitudeNearestToEquator,
-//     maximumHeight,
-//     ellipsoid,
-//     scratchHorizonCartesian,
-//   );
-//   maxX = Cartesian3.dot(
-//     Plane.projectPointOntoPlane(
-//       plane,
-//       horizonCartesian,
-//       scratchHorizonProjected,
-//     ),
-//     planeXAxis,
-//   );
-//   minX = -maxX; // symmetrical
-
-//   // Get the min and max Y, using the height that will give the largest extent
-//   maxY = Cartesian3.fromRadians(
-//     0.0,
-//     rectangle.north,
-//     fullyBelowEquator ? minimumHeight : maximumHeight,
-//     ellipsoid,
-//     scratchMaxY,
-//   ).z;
-//   minY = Cartesian3.fromRadians(
-//     0.0,
-//     rectangle.south,
-//     fullyAboveEquator ? minimumHeight : maximumHeight,
-//     ellipsoid,
-//     scratchMinY,
-//   ).z;
-
-//   const farZ = Cartesian3.fromRadians(
-//     rectangle.east,
-//     latitudeNearestToEquator,
-//     maximumHeight,
-//     ellipsoid,
-//     scratchZ,
-//   );
-//   minZ = Plane.getPointDistance(plane, farZ);
-//   maxZ = 0.0; // plane origin starts at maxZ already
-
-//   // min and max are local to the plane axes
-//   return fromPlaneExtents(
-//     planeOrigin,
-//     planeXAxis,
-//     planeYAxis,
-//     planeNormal,
-//     minX,
-//     maxX,
-//     minY,
-//     maxY,
-//     minZ,
-//     maxZ,
-//     result,
-//   );
-// };
-
-/**
- * Computes an OrientedBoundingBox that bounds an affine transformation.
- *
- * @param {Matrix4} transformation The affine transformation.
- * @param {OrientedBoundingBox} [result] The object onto which to store the result.
- * @returns {OrientedBoundingBox} The modified result parameter or a new OrientedBoundingBox instance if none was provided.
- */
-// OrientedBoundingBox.fromTransformation = function (transformation, result) {
-//   //>>includeStart('debug', pragmas.debug);
-//   Check.typeOf.object("transformation", transformation);
-//   //>>includeEnd('debug');
-
-//   if (!defined(result)) {
-//     result = new OrientedBoundingBox();
-//   }
-
-//   result.center = Matrix4.getTranslation(transformation, result.center);
-//   result.halfAxes = Matrix4.getMatrix3(transformation, result.halfAxes);
-//   result.halfAxes = Matrix3.multiplyByScalar(
-//     result.halfAxes,
-//     0.5,
-//     result.halfAxes,
-//   );
-//   return result;
-// };
-
 /**
  * Duplicates a OrientedBoundingBox instance.
  *
@@ -19595,579 +19218,6 @@ OrientedBoundingBox.clone = function (box, result) {
 
   return result;
 };
-
-/**
- * Determines which side of a plane the oriented bounding box is located.
- *
- * @param {OrientedBoundingBox} box The oriented bounding box to test.
- * @param {Plane} plane The plane to test against.
- * @returns {Intersect} {@link Intersect.INSIDE} if the entire box is on the side of the plane
- *                      the normal is pointing, {@link Intersect.OUTSIDE} if the entire box is
- *                      on the opposite side, and {@link Intersect.INTERSECTING} if the box
- *                      intersects the plane.
- */
-// OrientedBoundingBox.intersectPlane = function (box, plane) {
-//   //>>includeStart('debug', pragmas.debug);
-//   if (!defined(box)) {
-//     throw new DeveloperError("box is required.");
-//   }
-
-//   if (!defined(plane)) {
-//     throw new DeveloperError("plane is required.");
-//   }
-//   //>>includeEnd('debug');
-
-//   const center = box.center;
-//   const normal = plane.normal;
-//   const halfAxes = box.halfAxes;
-//   const normalX = normal.x,
-//     normalY = normal.y,
-//     normalZ = normal.z;
-//   // plane is used as if it is its normal; the first three components are assumed to be normalized
-//   const radEffective =
-//     Math.abs(
-//       normalX * halfAxes[Matrix3.COLUMN0ROW0] +
-//         normalY * halfAxes[Matrix3.COLUMN0ROW1] +
-//         normalZ * halfAxes[Matrix3.COLUMN0ROW2],
-//     ) +
-//     Math.abs(
-//       normalX * halfAxes[Matrix3.COLUMN1ROW0] +
-//         normalY * halfAxes[Matrix3.COLUMN1ROW1] +
-//         normalZ * halfAxes[Matrix3.COLUMN1ROW2],
-//     ) +
-//     Math.abs(
-//       normalX * halfAxes[Matrix3.COLUMN2ROW0] +
-//         normalY * halfAxes[Matrix3.COLUMN2ROW1] +
-//         normalZ * halfAxes[Matrix3.COLUMN2ROW2],
-//     );
-//   const distanceToPlane = Cartesian3.dot(normal, center) + plane.distance;
-
-//   if (distanceToPlane <= -radEffective) {
-//     // The entire box is on the negative side of the plane normal
-//     return Intersect.OUTSIDE;
-//   } else if (distanceToPlane >= radEffective) {
-//     // The entire box is on the positive side of the plane normal
-//     return Intersect.INSIDE;
-//   }
-//   return Intersect.INTERSECTING;
-// };
-
-// const scratchCartesianU = new Cartesian3();
-// const scratchCartesianV = new Cartesian3();
-// const scratchCartesianW = new Cartesian3();
-// const scratchValidAxis2 = new Cartesian3();
-// const scratchValidAxis3 = new Cartesian3();
-// const scratchPPrime = new Cartesian3();
-
-/**
- * Computes the estimated distance squared from the closest point on a bounding box to a point.
- *
- * @param {OrientedBoundingBox} box The box.
- * @param {Cartesian3} cartesian The point
- * @returns {number} The distance squared from the oriented bounding box to the point. Returns 0 if the point is inside the box.
- *
- * @example
- * // Sort bounding boxes from back to front
- * boxes.sort(function(a, b) {
- *     return Cesium.OrientedBoundingBox.distanceSquaredTo(b, camera.positionWC) - Cesium.OrientedBoundingBox.distanceSquaredTo(a, camera.positionWC);
- * });
- */
-// OrientedBoundingBox.distanceSquaredTo = function (box, cartesian) {
-//   // See Geometric Tools for Computer Graphics 10.4.2
-
-//   //>>includeStart('debug', pragmas.debug);
-//   if (!defined(box)) {
-//     throw new DeveloperError("box is required.");
-//   }
-//   if (!defined(cartesian)) {
-//     throw new DeveloperError("cartesian is required.");
-//   }
-//   //>>includeEnd('debug');
-
-//   const offset = Cartesian3.subtract(cartesian, box.center, scratchOffset);
-
-//   const halfAxes = box.halfAxes;
-//   let u = Matrix3.getColumn(halfAxes, 0, scratchCartesianU);
-//   let v = Matrix3.getColumn(halfAxes, 1, scratchCartesianV);
-//   let w = Matrix3.getColumn(halfAxes, 2, scratchCartesianW);
-
-//   const uHalf = Cartesian3.magnitude(u);
-//   const vHalf = Cartesian3.magnitude(v);
-//   const wHalf = Cartesian3.magnitude(w);
-
-//   let uValid = true;
-//   let vValid = true;
-//   let wValid = true;
-
-//   if (uHalf > 0) {
-//     Cartesian3.divideByScalar(u, uHalf, u);
-//   } else {
-//     uValid = false;
-//   }
-
-//   if (vHalf > 0) {
-//     Cartesian3.divideByScalar(v, vHalf, v);
-//   } else {
-//     vValid = false;
-//   }
-
-//   if (wHalf > 0) {
-//     Cartesian3.divideByScalar(w, wHalf, w);
-//   } else {
-//     wValid = false;
-//   }
-
-//   const numberOfDegenerateAxes = !uValid + !vValid + !wValid;
-//   let validAxis1;
-//   let validAxis2;
-//   let validAxis3;
-
-//   if (numberOfDegenerateAxes === 1) {
-//     let degenerateAxis = u;
-//     validAxis1 = v;
-//     validAxis2 = w;
-//     if (!vValid) {
-//       degenerateAxis = v;
-//       validAxis1 = u;
-//     } else if (!wValid) {
-//       degenerateAxis = w;
-//       validAxis2 = u;
-//     }
-
-//     validAxis3 = Cartesian3.cross(validAxis1, validAxis2, scratchValidAxis3);
-
-//     if (degenerateAxis === u) {
-//       u = validAxis3;
-//     } else if (degenerateAxis === v) {
-//       v = validAxis3;
-//     } else if (degenerateAxis === w) {
-//       w = validAxis3;
-//     }
-//   } else if (numberOfDegenerateAxes === 2) {
-//     validAxis1 = u;
-//     if (vValid) {
-//       validAxis1 = v;
-//     } else if (wValid) {
-//       validAxis1 = w;
-//     }
-
-//     let crossVector = Cartesian3.UNIT_Y;
-//     if (crossVector.equalsEpsilon(validAxis1, CesiumMath.EPSILON3)) {
-//       crossVector = Cartesian3.UNIT_X;
-//     }
-
-//     validAxis2 = Cartesian3.cross(validAxis1, crossVector, scratchValidAxis2);
-//     Cartesian3.normalize(validAxis2, validAxis2);
-//     validAxis3 = Cartesian3.cross(validAxis1, validAxis2, scratchValidAxis3);
-//     Cartesian3.normalize(validAxis3, validAxis3);
-
-//     if (validAxis1 === u) {
-//       v = validAxis2;
-//       w = validAxis3;
-//     } else if (validAxis1 === v) {
-//       w = validAxis2;
-//       u = validAxis3;
-//     } else if (validAxis1 === w) {
-//       u = validAxis2;
-//       v = validAxis3;
-//     }
-//   } else if (numberOfDegenerateAxes === 3) {
-//     u = Cartesian3.UNIT_X;
-//     v = Cartesian3.UNIT_Y;
-//     w = Cartesian3.UNIT_Z;
-//   }
-
-//   const pPrime = scratchPPrime;
-//   pPrime.x = Cartesian3.dot(offset, u);
-//   pPrime.y = Cartesian3.dot(offset, v);
-//   pPrime.z = Cartesian3.dot(offset, w);
-
-//   let distanceSquared = 0.0;
-//   let d;
-
-//   if (pPrime.x < -uHalf) {
-//     d = pPrime.x + uHalf;
-//     distanceSquared += d * d;
-//   } else if (pPrime.x > uHalf) {
-//     d = pPrime.x - uHalf;
-//     distanceSquared += d * d;
-//   }
-
-//   if (pPrime.y < -vHalf) {
-//     d = pPrime.y + vHalf;
-//     distanceSquared += d * d;
-//   } else if (pPrime.y > vHalf) {
-//     d = pPrime.y - vHalf;
-//     distanceSquared += d * d;
-//   }
-
-//   if (pPrime.z < -wHalf) {
-//     d = pPrime.z + wHalf;
-//     distanceSquared += d * d;
-//   } else if (pPrime.z > wHalf) {
-//     d = pPrime.z - wHalf;
-//     distanceSquared += d * d;
-//   }
-
-//   return distanceSquared;
-// };
-
-// const scratchCorner = new Cartesian3();
-// const scratchToCenter = new Cartesian3();
-
-/**
- * The distances calculated by the vector from the center of the bounding box to position projected onto direction.
- * <br>
- * If you imagine the infinite number of planes with normal direction, this computes the smallest distance to the
- * closest and farthest planes from position that intersect the bounding box.
- *
- * @param {OrientedBoundingBox} box The bounding box to calculate the distance to.
- * @param {Cartesian3} position The position to calculate the distance from.
- * @param {Cartesian3} direction The direction from position.
- * @param {Interval} [result] A Interval to store the nearest and farthest distances.
- * @returns {Interval} The nearest and farthest distances on the bounding box from position in direction.
- */
-// OrientedBoundingBox.computePlaneDistances = function (
-//   box,
-//   position,
-//   direction,
-//   result,
-// ) {
-//   //>>includeStart('debug', pragmas.debug);
-//   if (!defined(box)) {
-//     throw new DeveloperError("box is required.");
-//   }
-
-//   if (!defined(position)) {
-//     throw new DeveloperError("position is required.");
-//   }
-
-//   if (!defined(direction)) {
-//     throw new DeveloperError("direction is required.");
-//   }
-//   //>>includeEnd('debug');
-
-//   if (!defined(result)) {
-//     result = new Interval();
-//   }
-
-//   let minDist = Number.POSITIVE_INFINITY;
-//   let maxDist = Number.NEGATIVE_INFINITY;
-
-//   const center = box.center;
-//   const halfAxes = box.halfAxes;
-
-//   const u = Matrix3.getColumn(halfAxes, 0, scratchCartesianU);
-//   const v = Matrix3.getColumn(halfAxes, 1, scratchCartesianV);
-//   const w = Matrix3.getColumn(halfAxes, 2, scratchCartesianW);
-
-//   // project first corner
-//   const corner = Cartesian3.add(u, v, scratchCorner);
-//   Cartesian3.add(corner, w, corner);
-//   Cartesian3.add(corner, center, corner);
-
-//   const toCenter = Cartesian3.subtract(corner, position, scratchToCenter);
-//   let mag = Cartesian3.dot(direction, toCenter);
-
-//   minDist = Math.min(mag, minDist);
-//   maxDist = Math.max(mag, maxDist);
-
-//   // project second corner
-//   Cartesian3.add(center, u, corner);
-//   Cartesian3.add(corner, v, corner);
-//   Cartesian3.subtract(corner, w, corner);
-
-//   Cartesian3.subtract(corner, position, toCenter);
-//   mag = Cartesian3.dot(direction, toCenter);
-
-//   minDist = Math.min(mag, minDist);
-//   maxDist = Math.max(mag, maxDist);
-
-//   // project third corner
-//   Cartesian3.add(center, u, corner);
-//   Cartesian3.subtract(corner, v, corner);
-//   Cartesian3.add(corner, w, corner);
-
-//   Cartesian3.subtract(corner, position, toCenter);
-//   mag = Cartesian3.dot(direction, toCenter);
-
-//   minDist = Math.min(mag, minDist);
-//   maxDist = Math.max(mag, maxDist);
-
-//   // project fourth corner
-//   Cartesian3.add(center, u, corner);
-//   Cartesian3.subtract(corner, v, corner);
-//   Cartesian3.subtract(corner, w, corner);
-
-//   Cartesian3.subtract(corner, position, toCenter);
-//   mag = Cartesian3.dot(direction, toCenter);
-
-//   minDist = Math.min(mag, minDist);
-//   maxDist = Math.max(mag, maxDist);
-
-//   // project fifth corner
-//   Cartesian3.subtract(center, u, corner);
-//   Cartesian3.add(corner, v, corner);
-//   Cartesian3.add(corner, w, corner);
-
-//   Cartesian3.subtract(corner, position, toCenter);
-//   mag = Cartesian3.dot(direction, toCenter);
-
-//   minDist = Math.min(mag, minDist);
-//   maxDist = Math.max(mag, maxDist);
-
-//   // project sixth corner
-//   Cartesian3.subtract(center, u, corner);
-//   Cartesian3.add(corner, v, corner);
-//   Cartesian3.subtract(corner, w, corner);
-
-//   Cartesian3.subtract(corner, position, toCenter);
-//   mag = Cartesian3.dot(direction, toCenter);
-
-//   minDist = Math.min(mag, minDist);
-//   maxDist = Math.max(mag, maxDist);
-
-//   // project seventh corner
-//   Cartesian3.subtract(center, u, corner);
-//   Cartesian3.subtract(corner, v, corner);
-//   Cartesian3.add(corner, w, corner);
-
-//   Cartesian3.subtract(corner, position, toCenter);
-//   mag = Cartesian3.dot(direction, toCenter);
-
-//   minDist = Math.min(mag, minDist);
-//   maxDist = Math.max(mag, maxDist);
-
-//   // project eighth corner
-//   Cartesian3.subtract(center, u, corner);
-//   Cartesian3.subtract(corner, v, corner);
-//   Cartesian3.subtract(corner, w, corner);
-
-//   Cartesian3.subtract(corner, position, toCenter);
-//   mag = Cartesian3.dot(direction, toCenter);
-
-//   minDist = Math.min(mag, minDist);
-//   maxDist = Math.max(mag, maxDist);
-
-//   result.start = minDist;
-//   result.stop = maxDist;
-//   return result;
-// };
-
-// const scratchXAxis = new Cartesian3();
-// const scratchYAxis = new Cartesian3();
-// const scratchZAxis = new Cartesian3();
-
-/**
- * Computes the eight corners of an oriented bounding box. The corners are ordered by (-X, -Y, -Z), (-X, -Y, +Z), (-X, +Y, -Z), (-X, +Y, +Z), (+X, -Y, -Z), (+X, -Y, +Z), (+X, +Y, -Z), (+X, +Y, +Z).
- *
- * @param {OrientedBoundingBox} box The oriented bounding box.
- * @param {Cartesian3[]} [result] An array of eight {@link Cartesian3} instances onto which to store the corners.
- * @returns {Cartesian3[]} The modified result parameter or a new array if none was provided.
- */
-// OrientedBoundingBox.computeCorners = function (box, result) {
-//   //>>includeStart('debug', pragmas.debug);
-//   Check.typeOf.object("box", box);
-//   //>>includeEnd('debug');
-
-//   if (!defined(result)) {
-//     result = [
-//       new Cartesian3(),
-//       new Cartesian3(),
-//       new Cartesian3(),
-//       new Cartesian3(),
-//       new Cartesian3(),
-//       new Cartesian3(),
-//       new Cartesian3(),
-//       new Cartesian3(),
-//     ];
-//   }
-
-//   const center = box.center;
-//   const halfAxes = box.halfAxes;
-//   const xAxis = Matrix3.getColumn(halfAxes, 0, scratchXAxis);
-//   const yAxis = Matrix3.getColumn(halfAxes, 1, scratchYAxis);
-//   const zAxis = Matrix3.getColumn(halfAxes, 2, scratchZAxis);
-
-//   Cartesian3.clone(center, result[0]);
-//   Cartesian3.subtract(result[0], xAxis, result[0]);
-//   Cartesian3.subtract(result[0], yAxis, result[0]);
-//   Cartesian3.subtract(result[0], zAxis, result[0]);
-
-//   Cartesian3.clone(center, result[1]);
-//   Cartesian3.subtract(result[1], xAxis, result[1]);
-//   Cartesian3.subtract(result[1], yAxis, result[1]);
-//   Cartesian3.add(result[1], zAxis, result[1]);
-
-//   Cartesian3.clone(center, result[2]);
-//   Cartesian3.subtract(result[2], xAxis, result[2]);
-//   Cartesian3.add(result[2], yAxis, result[2]);
-//   Cartesian3.subtract(result[2], zAxis, result[2]);
-
-//   Cartesian3.clone(center, result[3]);
-//   Cartesian3.subtract(result[3], xAxis, result[3]);
-//   Cartesian3.add(result[3], yAxis, result[3]);
-//   Cartesian3.add(result[3], zAxis, result[3]);
-
-//   Cartesian3.clone(center, result[4]);
-//   Cartesian3.add(result[4], xAxis, result[4]);
-//   Cartesian3.subtract(result[4], yAxis, result[4]);
-//   Cartesian3.subtract(result[4], zAxis, result[4]);
-
-//   Cartesian3.clone(center, result[5]);
-//   Cartesian3.add(result[5], xAxis, result[5]);
-//   Cartesian3.subtract(result[5], yAxis, result[5]);
-//   Cartesian3.add(result[5], zAxis, result[5]);
-
-//   Cartesian3.clone(center, result[6]);
-//   Cartesian3.add(result[6], xAxis, result[6]);
-//   Cartesian3.add(result[6], yAxis, result[6]);
-//   Cartesian3.subtract(result[6], zAxis, result[6]);
-
-//   Cartesian3.clone(center, result[7]);
-//   Cartesian3.add(result[7], xAxis, result[7]);
-//   Cartesian3.add(result[7], yAxis, result[7]);
-//   Cartesian3.add(result[7], zAxis, result[7]);
-
-//   return result;
-// };
-
-// const scratchRotationScale = new Matrix3();
-
-/**
- * Computes a transformation matrix from an oriented bounding box.
- *
- * @param {OrientedBoundingBox} box The oriented bounding box.
- * @param {Matrix4} result The object onto which to store the result.
- * @returns {Matrix4} The modified result parameter or a new {@link Matrix4} instance if none was provided.
- */
-// OrientedBoundingBox.computeTransformation = function (box, result) {
-//   //>>includeStart('debug', pragmas.debug);
-//   Check.typeOf.object("box", box);
-//   //>>includeEnd('debug');
-
-//   if (!defined(result)) {
-//     result = new Matrix4();
-//   }
-
-//   const translation = box.center;
-//   const rotationScale = Matrix3.multiplyByUniformScale(
-//     box.halfAxes,
-//     2.0,
-//     scratchRotationScale,
-//   );
-//   return Matrix4.fromRotationTranslation(rotationScale, translation, result);
-// };
-
-// const scratchBoundingSphere = new BoundingSphere();
-
-/**
- * Determines whether or not a bounding box is hidden from view by the occluder.
- *
- * @param {OrientedBoundingBox} box The bounding box surrounding the occludee object.
- * @param {Occluder} occluder The occluder.
- * @returns {boolean} <code>true</code> if the box is not visible; otherwise <code>false</code>.
- */
-// OrientedBoundingBox.isOccluded = function (box, occluder) {
-//   //>>includeStart('debug', pragmas.debug);
-//   if (!defined(box)) {
-//     throw new DeveloperError("box is required.");
-//   }
-//   if (!defined(occluder)) {
-//     throw new DeveloperError("occluder is required.");
-//   }
-//   //>>includeEnd('debug');
-
-//   const sphere = BoundingSphere.fromOrientedBoundingBox(
-//     box,
-//     scratchBoundingSphere,
-//   );
-
-//   return !occluder.isBoundingSphereVisible(sphere);
-// };
-
-/**
- * Determines which side of a plane the oriented bounding box is located.
- *
- * @param {Plane} plane The plane to test against.
- * @returns {Intersect} {@link Intersect.INSIDE} if the entire box is on the side of the plane
- *                      the normal is pointing, {@link Intersect.OUTSIDE} if the entire box is
- *                      on the opposite side, and {@link Intersect.INTERSECTING} if the box
- *                      intersects the plane.
- */
-// OrientedBoundingBox.prototype.intersectPlane = function (plane) {
-//   return OrientedBoundingBox.intersectPlane(this, plane);
-// };
-
-/**
- * Computes the estimated distance squared from the closest point on a bounding box to a point.
- *
- * @param {Cartesian3} cartesian The point
- * @returns {number} The estimated distance squared from the bounding sphere to the point.
- *
- * @example
- * // Sort bounding boxes from back to front
- * boxes.sort(function(a, b) {
- *     return b.distanceSquaredTo(camera.positionWC) - a.distanceSquaredTo(camera.positionWC);
- * });
- */
-// OrientedBoundingBox.prototype.distanceSquaredTo = function (cartesian) {
-//   return OrientedBoundingBox.distanceSquaredTo(this, cartesian);
-// };
-
-/**
- * The distances calculated by the vector from the center of the bounding box to position projected onto direction.
- * <br>
- * If you imagine the infinite number of planes with normal direction, this computes the smallest distance to the
- * closest and farthest planes from position that intersect the bounding box.
- *
- * @param {Cartesian3} position The position to calculate the distance from.
- * @param {Cartesian3} direction The direction from position.
- * @param {Interval} [result] A Interval to store the nearest and farthest distances.
- * @returns {Interval} The nearest and farthest distances on the bounding box from position in direction.
- */
-// OrientedBoundingBox.prototype.computePlaneDistances = function (
-//   position,
-//   direction,
-//   result,
-// ) {
-//   return OrientedBoundingBox.computePlaneDistances(
-//     this,
-//     position,
-//     direction,
-//     result,
-//   );
-// };
-
-/**
- * Computes the eight corners of an oriented bounding box. The corners are ordered by (-X, -Y, -Z), (-X, -Y, +Z), (-X, +Y, -Z), (-X, +Y, +Z), (+X, -Y, -Z), (+X, -Y, +Z), (+X, +Y, -Z), (+X, +Y, +Z).
- *
- * @param {Cartesian3[]} [result] An array of eight {@link Cartesian3} instances onto which to store the corners.
- * @returns {Cartesian3[]} The modified result parameter or a new array if none was provided.
- */
-// OrientedBoundingBox.prototype.computeCorners = function (result) {
-//   return OrientedBoundingBox.computeCorners(this, result);
-// };
-
-/**
- * Computes a transformation matrix from an oriented bounding box.
- *
- * @param {Matrix4} result The object onto which to store the result.
- * @returns {Matrix4} The modified result parameter or a new {@link Matrix4} instance if none was provided.
- */
-// OrientedBoundingBox.prototype.computeTransformation = function (result) {
-//   return OrientedBoundingBox.computeTransformation(this, result);
-// };
-
-/**
- * Determines whether or not a bounding box is hidden from view by the occluder.
- *
- * @param {Occluder} occluder The occluder.
- * @returns {boolean} <code>true</code> if the sphere is not visible; otherwise <code>false</code>.
- */
-// OrientedBoundingBox.prototype.isOccluded = function (occluder) {
-//   return OrientedBoundingBox.isOccluded(this, occluder);
-// };
 
 /**
  * Compares the provided OrientedBoundingBox componentwise and returns
@@ -20212,37 +19262,6 @@ OrientedBoundingBox.prototype.equals = function (right) {
  * @private
  */
 const CoplanarPolygonGeometryLibrary = {};
-
-// const scratchIntersectionPoint = new Cartesian3();
-// const scratchXAxis = new Cartesian3();
-// const scratchYAxis = new Cartesian3();
-// const scratchZAxis = new Cartesian3();
-// const obbScratch = new OrientedBoundingBox();
-
-// CoplanarPolygonGeometryLibrary.validOutline = function (positions) {
-//   //>>includeStart('debug', pragmas.debug);
-//   Check.defined("positions", positions);
-//   //>>includeEnd('debug');
-
-//   const orientedBoundingBox = OrientedBoundingBox.fromPoints(
-//     positions,
-//     obbScratch,
-//   );
-//   const halfAxes = orientedBoundingBox.halfAxes;
-//   const xAxis = Matrix3.getColumn(halfAxes, 0, scratchXAxis);
-//   const yAxis = Matrix3.getColumn(halfAxes, 1, scratchYAxis);
-//   const zAxis = Matrix3.getColumn(halfAxes, 2, scratchZAxis);
-
-//   const xMag = Cartesian3.magnitude(xAxis);
-//   const yMag = Cartesian3.magnitude(yAxis);
-//   const zMag = Cartesian3.magnitude(zAxis);
-
-//   // If all the points are on a line return undefined because we can't draw a polygon
-//   return !(
-//     (xMag === 0 && (yMag === 0 || zMag === 0)) ||
-//     (yMag === 0 && zMag === 0)
-//   );
-// };
 
 // call after removeDuplicates
 CoplanarPolygonGeometryLibrary.computeProjectTo2DArguments = function (
@@ -20971,9 +19990,6 @@ WindingOrder.validate = function (windingOrder) {
 };
 
 var WindingOrder$1 = Object.freeze(WindingOrder);
-
-// const scaleToGeodeticHeightN = new Cartesian3();
-// const scaleToGeodeticHeightP = new Cartesian3();
 
 /**
  * @private
