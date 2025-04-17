@@ -23,7 +23,6 @@
   "dependencies": {
     "@lijuhong1981/jsload": "^1.2.31",
     "bluebird": "^3.7.2",
-    "cesium": "^1.86.1",
     "earcut": "^3.0.0",
     "mersenne-twister": "^1.1.0",
     "path": "^0.12.7"
