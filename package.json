@@ -1,6 +1,6 @@
 {
   "name": "@lijuhong1981/obj2gltf",
-  "version": "1.0.4",
+  "version": "1.1.0",
   "description": "convert obj model to gltf model, can works in the web browser.",
   "type": "module",
   "main": "bin/obj2gltf.min.js",
@@ -13,7 +13,13 @@
     "type": "git",
     "url": "git+https://github.com/lijuhong1981/obj2gltf.git"
   },
-  "keywords": [],
+  "keywords": [
+    "obj",
+    "gltf",
+    "cesium",
+    "webgl",
+    "browser"
+  ],
   "author": "",
   "license": "ISC",
   "bugs": {
