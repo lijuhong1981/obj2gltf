@@ -21,7 +21,7 @@
     "browser"
   ],
   "author": "",
-  "license": "ISC",
+  "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/lijuhong1981/obj2gltf/issues"
   },

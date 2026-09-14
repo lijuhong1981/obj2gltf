@@ -79,8 +79,8 @@ obj2gltf(objUrl, {
 | `triangleWindingOrderSanitization` | `false` | 依据顶点法线清洗三角形绕序 | ✅ |
 | `overridingTextures` | `{}` | 覆盖 MTL 中声明的纹理（`baseColorTexture`、`normalTexture`、`emissiveTexture`、`alphaTexture`、`occlusionTexture`、`metallicRoughnessOcclusionTexture`、`specularGlossinessTexture`） | ✅ |
 | `logger` | `console.log` | 日志回调函数 | ✅ |
-| `binary` | `false` | glb 二进制输出（未移植，恒返回 JSON） | ❌ |
-| `separate` / `separateTextures` / `writer` / `outputDirectory` | `false` | 分离资源写出（浏览器无磁盘写入） | ❌ |
+| `binary` | `false` | glb 二进制输出（未移植，传入时会输出警告并返回 JSON） | ❌ |
+| `separate` / `separateTextures` / `writer` / `outputDirectory` | `false` | 分离资源写出（浏览器无磁盘写入，传入 `separate` 时会输出警告并按内嵌处理） | ❌ |
 | `checkTransparency` | `false` | 逐像素检查纹理透明度（纹理不解码，不生效） | ❌ |
 | `packOcclusion` | `false` | 遮蔽纹理打包进金属粗糙度纹理（依赖像素解码，不生效） | ❌ |
 | `secure` | `false` | 禁止读取 OBJ 目录之外的文件（检查已移除） | ❌ |
@@ -95,3 +95,7 @@ obj2gltf(objUrl, {
 - 纹理不解码：pngjs / jpeg-js 像素级处理全部移除，因此透明度逐像素检查、PBR 纹理打包（diffuse+alpha、metallicRoughnessOcclusion 等）不生效
 - 移除 `secure` 目录越界检查与分离资源写出
 - mtl / 纹理路径按浏览器 URL 语义解析（原版使用 Node path）
+
+## 许可证
+
+[Apache-2.0](LICENSE.md)。本项目衍生自 [CesiumGS/obj2gltf](https://github.com/CesiumGS/obj2gltf)（Apache-2.0），原版权归属 Cesium GS, Inc. and Contributors，浏览器化修改部分版权归 lijuhong1981。
