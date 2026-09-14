@@ -21618,7 +21618,7 @@
 
 	  const promises = [];
 	  // if (separateTextures) {
-	  promises.push(writeSeparateTextures(gltf));
+	  promises.push(writeSeparateTextures(gltf, options));
 	  // } else {
 	  //   writeEmbeddedTextures(gltf);
 	  // }
@@ -21688,7 +21688,13 @@
 	    images,
 	    function (image) {
 	      const texture = image.extras._obj2gltf;
-	      const imageUri = image.name + texture.extension;
+	      // texture.path holds the fully resolved texture URL (computed while
+	      // parsing the mtl). Use it so the returned glTF points at the actual
+	      // texture location, including subdirectory references.
+	      const imageUri =
+	        options.resolveTextureUris && defined(texture.path)
+	          ? texture.path
+	          : image.name + texture.extension;
 	      image.uri = imageUri;
 	      // return options.writer(imageUri, texture.source);
 	      return image;
@@ -21752,6 +21758,7 @@
 	 * @param {String} [options.overridingTextures.alphaTexture] Path to the alpha texture.
 	 * @param {String} [options.inputUpAxis='Y'] Up axis of the obj. Choices are 'X', 'Y', and 'Z'.
 	 * @param {String} [options.outputUpAxis='Y'] Up axis of the converted glTF. Choices are 'X', 'Y', and 'Z'.
+	 * @param {Boolean} [options.resolveTextureUris=true] Resolve texture uris in the returned glTF to absolute URLs based on where the textures are referenced from the mtl file. Set to false to keep bare file names.
 	 * @param {String} [options.triangleWindingOrderSanitization=false] Apply triangle winding order sanitization.
 	 * @param {Logger} [options.logger] A callback function for handling logged messages. Defaults to console.log.
 	 * @param {Writer} [options.writer] A callback function that writes files that are saved as separate resources.
@@ -21808,6 +21815,10 @@
 	    options.triangleWindingOrderSanitization,
 	    defaults.triangleWindingOrderSanitization,
 	  );
+	  options.resolveTextureUris = defaultValue(
+	    options.resolveTextureUris,
+	    defaults.resolveTextureUris,
+	  );
 
 	  if (!defined(objPath)) {
 	    throw new DeveloperError("objPath is required");
@@ -21853,7 +21864,7 @@
 	      return createGltf(objData, options);
 	    })
 	    .then(function (gltf) {
-	      return writeGltf(gltf);
+	      return writeGltf(gltf, options);
 	    });
 	}
 
@@ -21955,6 +21966,14 @@
 	   * @default false
 	   */
 	  triangleWindingOrderSanitization: false,
+	  /**
+	   * Gets or sets whether texture uris in the returned glTF are resolved to
+	   * absolute URLs based on where the textures are referenced from the mtl
+	   * file. When false, bare file names are kept.
+	   * @type Boolean
+	   * @default true
+	   */
+	  resolveTextureUris: true,
 	};
 
 	return obj2gltf;

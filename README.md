@@ -65,7 +65,7 @@ obj2gltf(objUrl, {
 `Promise` 解析为 glTF 2.0 JSON 对象：
 
 - 几何数据（顶点、法线、UV、索引）以 base64 内嵌在 `gltf.buffers[0].uri`
-- 纹理不内嵌、不下载：`gltf.images[i].uri` 为纹理的「文件名 + 扩展名」，调用方需按 MTL 所在目录自行加载对应图片
+- 纹理不内嵌、不下载：`gltf.images[i].uri` 默认为纹理的**绝对 URL**（基于 mtl 所在目录解析，含子目录引用），设置 `resolveTextureUris: false` 可保留纯文件名；纹理图片由调用方按该 URI 加载
 
 ### options 参数
 
@@ -78,11 +78,57 @@ obj2gltf(objUrl, {
 | `doubleSidedMaterial` | `false` | 材质强制双面渲染 |
 | `triangleWindingOrderSanitization` | `false` | 依据顶点法线清洗三角形绕序 |
 | `overridingTextures` | `{}` | 覆盖 MTL 中声明的纹理（`baseColorTexture`、`normalTexture`、`emissiveTexture`、`alphaTexture`、`occlusionTexture`、`metallicRoughnessOcclusionTexture`、`specularGlossinessTexture`） |
+| `resolveTextureUris` | `true` | 将输出 glTF 中的纹理 URI 解析为绝对 URL（基于 mtl 所在目录）；`false` 时保留纯文件名 |
 | `logger` | `console.log` | 日志回调函数 |
 
 `metallicRoughness`、`specularGlossiness`、`unlit` 三者至多启用一个；同时设置 `metallicRoughnessOcclusionTexture` 与 `specularGlossinessTexture` 会抛错。
 
 原版的 `binary`、`separate`、`separateTextures`、`checkTransparency`、`packOcclusion`、`secure`、`writer`、`outputDirectory` 等选项在浏览器端不支持，传入会被忽略。
+
+## 在 CesiumJS 中使用
+
+转换结果可直接交给 Cesium 的 `Model` API（Cesium 1.97+）：
+
+```js
+async function loadObjModel(viewer, objUrl, lon, lat, height) {
+    // 浏览器端完成转换
+    // 纹理 URI 默认已解析为绝对地址（resolveTextureUris: true），无需再处理
+    const gltf = await obj2gltf(objUrl);
+
+    const model = await Cesium.Model.fromGltfAsync({
+        gltf: gltf,
+        modelMatrix: Cesium.Transforms.eastNorthUpToFixedFrame(
+            Cesium.Cartesian3.fromDegrees(lon, lat, height)
+        ),
+        scale: 1.0,
+    });
+    viewer.scene.primitives.add(model);
+
+    // 飞到模型
+    viewer.scene.camera.flyToBoundingSphere(model.boundingSphere);
+    return model;
+}
+
+loadObjModel(viewer, 'https://example.com/models/building.obj', 116.39, 39.9, 0);
+```
+
+要点：
+
+- 保持默认 `outputUpAxis: 'Y'`：glTF 规范为 Y-up，Cesium 会自动完成到 Z-up 的坐标转换
+- 旧版 Cesium（< 1.97）改用同步 API：`viewer.scene.primitives.add(Cesium.Model.fromGltf({ gltf, modelMatrix }))`
+- Entity 方式需先将 JSON 转为 blob URL（默认输出的纹理绝对地址不受 blob 基准影响）：
+
+  ```js
+  const blobUrl = URL.createObjectURL(
+      new Blob([JSON.stringify(gltf)], { type: 'model/gltf+json' })
+  );
+  viewer.entities.add({
+      position: Cesium.Cartesian3.fromDegrees(lon, lat, height),
+      model: { uri: blobUrl },
+  });
+  ```
+
+- OBJ / MTL / 纹理文件需允许跨域访问（Cesium 通过 fetch 拉取）；大模型的 base64 内嵌体积约膨胀 33%，超大模型建议服务端预转换
 
 ## 与原版（Node CLI）的差异
 
