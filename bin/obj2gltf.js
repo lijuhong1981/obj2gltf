@@ -21612,100 +21612,33 @@
 	 * @private
 	 */
 	function writeGltf(gltf, options) {
-	  return encodeTextures(gltf).then(function () {
-	    // const binary = options.binary;
-	    // const separate = options.separate;
-	    // const separateTextures = options.separateTextures;
+	  // const binary = options.binary;
+	  // const separate = options.separate;
+	  // const separateTextures = options.separateTextures;
 
-	    const promises = [];
-	    // if (separateTextures) {
-	      promises.push(writeSeparateTextures(gltf));
-	    // } else {
-	    //   writeEmbeddedTextures(gltf);
+	  const promises = [];
+	  // if (separateTextures) {
+	  promises.push(writeSeparateTextures(gltf));
+	  // } else {
+	  //   writeEmbeddedTextures(gltf);
+	  // }
+
+	  // if (separate) {
+	  //   promises.push(writeSeparateBuffers(gltf, options));
+	  // } else if (!binary) {
+	  writeEmbeddedBuffer(gltf);
+	  // }
+
+	  // const binaryBuffer = gltf.buffers[0].extras._obj2gltf.source;
+
+	  return bluebirdExports.Promise.all(promises).then(function () {
+	    deleteExtras(gltf);
+	    removeEmpty(gltf);
+	    // if (binary) {
+	    //   return gltfToGlb(gltf, binaryBuffer);
 	    // }
-
-	    // if (separate) {
-	    //   promises.push(writeSeparateBuffers(gltf, options));
-	    // } else if (!binary) {
-	      writeEmbeddedBuffer(gltf);
-	    // }
-
-	    // const binaryBuffer = gltf.buffers[0].extras._obj2gltf.source;
-
-	    return bluebirdExports.Promise.all(promises).then(function () {
-	      deleteExtras(gltf);
-	      removeEmpty(gltf);
-	      // if (binary) {
-	      //   return gltfToGlb(gltf, binaryBuffer);
-	      // }
-	      return gltf;
-	    });
+	    return gltf;
 	  });
-	}
-
-	function toBase64(bytes) {
-	  // Chunked conversion avoids call stack limits for large buffers
-	  let binary = "";
-	  const chunkSize = 0x8000;
-	  const length = bytes.length;
-	  for (let i = 0; i < length; i += chunkSize) {
-	    binary += String.fromCharCode.apply(
-	      null,
-	      bytes.subarray(i, Math.min(i + chunkSize, length)),
-	    );
-	  }
-	  return btoa(binary);
-	}
-
-	function encodePng(texture) {
-	  // Constants defined by pngjs
-	  const rgbColorType = 2;
-	  const rgbaColorType = 6;
-
-	  const png = new PNG({
-	    width: texture.width,
-	    height: texture.height,
-	    colorType: texture.transparent ? rgbaColorType : rgbColorType,
-	    inputColorType: rgbaColorType,
-	    inputHasAlpha: true,
-	  });
-
-	  png.data = texture.pixels;
-
-	  return new bluebirdExports.Promise(function (resolve, reject) {
-	    const chunks = [];
-	    const stream = png.pack();
-	    stream.on("data", function (chunk) {
-	      chunks.push(chunk);
-	    });
-	    stream.on("end", function () {
-	      resolve(concatBytes(chunks));
-	    });
-	    stream.on("error", reject);
-	  });
-	}
-
-	function encodeTexture(texture) {
-	  if (
-	    !defined(texture.source) &&
-	    defined(texture.pixels) &&
-	    texture.extension === ".png"
-	  ) {
-	    return encodePng(texture).then(function (encoded) {
-	      texture.source = encoded;
-	    });
-	  }
-	}
-
-	function encodeTextures(gltf) {
-	  // Dynamically generated PBR textures need to be encoded to png prior to being saved
-	  const encodePromises = [];
-	  const images = gltf.images;
-	  const length = images.length;
-	  for (let i = 0; i < length; ++i) {
-	    encodePromises.push(encodeTexture(images[i].extras._obj2gltf));
-	  }
-	  return bluebirdExports.Promise.all(encodePromises);
 	}
 
 	function deleteExtras(gltf) {
@@ -21764,6 +21697,20 @@
 	  );
 	}
 
+	function toBase64(bytes) {
+	  // Chunked conversion avoids call stack limits for large buffers
+	  let binary = "";
+	  const chunkSize = 0x8000;
+	  const length = bytes.length;
+	  for (let i = 0; i < length; i += chunkSize) {
+	    binary += String.fromCharCode.apply(
+	      null,
+	      bytes.subarray(i, Math.min(i + chunkSize, length)),
+	    );
+	  }
+	  return btoa(binary);
+	}
+
 	function writeEmbeddedBuffer(gltf) {
 	  const buffer = gltf.buffers[0];
 	  const source = buffer.extras._obj2gltf.source;
@@ -21815,11 +21762,23 @@
 	function obj2gltf(objPath, options) {
 	  const defaults = obj2gltf.defaults;
 	  options = defaultValue(options, {});
-	  options.binary = defaultValue(options.binary, defaults.binary);
-	  options.separate = defaultValue(options.separate, defaults.separate);
-	  options.separateTextures =
-	    defaultValue(options.separateTextures, defaults.separateTextures) ||
-	    options.separate;
+	  options.logger = defaultValue(options.logger, getDefaultLogger());
+	  if (options.binary) {
+	    options.logger(
+	      "The binary option is not supported in the browser. Returning the glTF JSON instead of a glb.",
+	    );
+	  }
+	  // Force binary off: glb output is not implemented in the browser.
+	  options.binary = false;
+	  if (options.separate) {
+	    options.logger(
+	      "The separate option is not supported in the browser. Geometry is embedded in the returned glTF and textures are referenced by file name.",
+	    );
+	  }
+	  // Force separate off: it is not supported in the browser and would produce
+	  // invalid glTF (buffers without uris), so block it before it can propagate.
+	  options.separate = false;
+	  options.separateTextures = false;
 	  options.checkTransparency = defaultValue(
 	    options.checkTransparency,
 	    defaults.checkTransparency,
@@ -21846,7 +21805,6 @@
 	    options.overridingTextures,
 	    defaultValue.EMPTY_OBJECT,
 	  );
-	  options.logger = defaultValue(options.logger, getDefaultLogger());
 	  // options.writer = defaultValue(
 	  //   options.writer,
 	  //   getDefaultWriter(options.outputDirectory),
@@ -22006,7 +21964,7 @@
 	   * @type Boolean
 	   * @default false
 	   */
-	  windingOrderSanitization: false,
+	  triangleWindingOrderSanitization: false,
 	};
 
 	return obj2gltf;
