@@ -82,7 +82,7 @@ obj2gltf(objUrl, {
 
 `metallicRoughness`、`specularGlossiness`、`unlit` 三者至多启用一个；同时设置 `metallicRoughnessOcclusionTexture` 与 `specularGlossinessTexture` 会抛错。
 
-原版的 `binary`、`separate`、`separateTextures`、`checkTransparency`、`packOcclusion`、`secure`、`writer`、`outputDirectory` 等选项在浏览器端不支持，传入会被忽略（`binary` / `separate` 会通过 `logger` 输出警告）。
+原版的 `binary`、`separate`、`separateTextures`、`checkTransparency`、`packOcclusion`、`secure`、`writer`、`outputDirectory` 等选项在浏览器端不支持，传入会被忽略。
 
 ## 与原版（Node CLI）的差异
 
