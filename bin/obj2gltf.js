@@ -6466,7 +6466,6 @@
 			    ic();
 			    ic();
 			    return obj;
-			    // eval(obj);
 			}
 
 			var rident = /^[a-z$_][a-z$_0-9]*$/i;
@@ -7874,6 +7873,14 @@
 	  return b;
 	}
 
+	/**
+	 * A frozen empty object that is commonly used as a default value for options.
+	 *
+	 * @type Object
+	 * @constant
+	 */
+	defaultValue.EMPTY_OBJECT = Object.freeze({});
+
 	// const defined = Cesium.defined;
 
 	// module.exports = loadTexture;
@@ -8081,6 +8088,40 @@
 	            reject(error);
 	        });
 	    });
+	}
+
+	// module.exports = resolvePath;
+
+	/**
+	 * Resolve a reference path (e.g. a mtl or texture path from the obj/mtl file)
+	 * against a directory, using the browser URL parser so that absolute
+	 * references (https://...) are kept intact and `..` segments are resolved
+	 * correctly. The node path module cannot do this in the browser because
+	 * `path.resolve` prepends `process.cwd()` and collapses the `//` in URLs.
+	 *
+	 * @param {String} referencePath The reference path to resolve.
+	 * @param {String} directory The directory to resolve against.
+	 * @returns {String} The resolved path.
+	 *
+	 * @private
+	 */
+	function resolvePath(referencePath, directory) {
+	  // Unify windows-style separators
+	  referencePath = referencePath.replace(/\\/g, "/");
+	  directory = directory.replace(/\\/g, "/");
+	  try {
+	    // The directory must end with a trailing slash, otherwise the URL parser
+	    // treats its last segment as a file name and drops it.
+	    const directoryHref = directory.endsWith("/") ? directory : directory + "/";
+	    const base = new URL(
+	      directoryHref,
+	      typeof location !== "undefined" ? location.href : undefined,
+	    );
+	    return new URL(referencePath, base).href;
+	  } catch (error) {
+	    // The directory could not be parsed as a URL. Return the reference as-is.
+	    return referencePath;
+	  }
 	}
 
 	/*
@@ -9838,7 +9879,8 @@
 	      texturePath = texturePath.split(/\s+/).pop();
 	    }
 	    texturePath = texturePath.replace(/\\/g, "/");
-	    return path.normalize(path.resolve(mtlDirectory, texturePath));
+	    // Resolve against the mtl directory with the URL parser so URLs stay intact
+	    return resolvePath(texturePath, mtlDirectory);
 	  }
 
 	  function parseLine(line) {
@@ -10065,7 +10107,7 @@
 
 	  let texturePromise = texturePromiseMap[texturePath];
 	  if (!defined(texturePromise)) {
-	    const shallowPath = path.join(mtlDirectory, path.basename(texturePath));
+	    const shallowPath = resolvePath(path.basename(texturePath), mtlDirectory);
 	    // if (options.secure && outsideDirectory(texturePath, mtlDirectory)) {
 	    //   // Try looking for the texture in the same directory as the obj
 	    //   options.logger(
@@ -19364,10 +19406,10 @@
 
 	    // if the shape is not too simple, we'll use z-order curve hash later; calculate polygon bbox
 	    if (data.length > 80 * dim) {
-	        minX = Infinity;
-	        minY = Infinity;
-	        let maxX = -Infinity;
-	        let maxY = -Infinity;
+	        minX = data[0];
+	        minY = data[1];
+	        let maxX = minX;
+	        let maxY = minY;
 
 	        for (let i = dim; i < outerLen; i += dim) {
 	            const x = data[i];
@@ -19490,16 +19532,16 @@
 	    // now make sure we don't have other points inside the potential ear
 	    const ax = a.x, bx = b.x, cx = c.x, ay = a.y, by = b.y, cy = c.y;
 
-	    // triangle bbox; min & max are calculated like this for speed
-	    const x0 = ax < bx ? (ax < cx ? ax : cx) : (bx < cx ? bx : cx),
-	        y0 = ay < by ? (ay < cy ? ay : cy) : (by < cy ? by : cy),
-	        x1 = ax > bx ? (ax > cx ? ax : cx) : (bx > cx ? bx : cx),
-	        y1 = ay > by ? (ay > cy ? ay : cy) : (by > cy ? by : cy);
+	    // triangle bbox
+	    const x0 = Math.min(ax, bx, cx),
+	        y0 = Math.min(ay, by, cy),
+	        x1 = Math.max(ax, bx, cx),
+	        y1 = Math.max(ay, by, cy);
 
 	    let p = c.next;
 	    while (p !== a) {
 	        if (p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1 &&
-	            pointInTriangle(ax, ay, bx, by, cx, cy, p.x, p.y) &&
+	            pointInTriangleExceptFirst(ax, ay, bx, by, cx, cy, p.x, p.y) &&
 	            area(p.prev, p, p.next) >= 0) return false;
 	        p = p.next;
 	    }
@@ -19516,11 +19558,11 @@
 
 	    const ax = a.x, bx = b.x, cx = c.x, ay = a.y, by = b.y, cy = c.y;
 
-	    // triangle bbox; min & max are calculated like this for speed
-	    const x0 = ax < bx ? (ax < cx ? ax : cx) : (bx < cx ? bx : cx),
-	        y0 = ay < by ? (ay < cy ? ay : cy) : (by < cy ? by : cy),
-	        x1 = ax > bx ? (ax > cx ? ax : cx) : (bx > cx ? bx : cx),
-	        y1 = ay > by ? (ay > cy ? ay : cy) : (by > cy ? by : cy);
+	    // triangle bbox
+	    const x0 = Math.min(ax, bx, cx),
+	        y0 = Math.min(ay, by, cy),
+	        x1 = Math.max(ax, bx, cx),
+	        y1 = Math.max(ay, by, cy);
 
 	    // z-order range for the current triangle bbox;
 	    const minZ = zOrder(x0, y0, minX, minY, invSize),
@@ -19532,25 +19574,25 @@
 	    // look for points inside the triangle in both directions
 	    while (p && p.z >= minZ && n && n.z <= maxZ) {
 	        if (p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1 && p !== a && p !== c &&
-	            pointInTriangle(ax, ay, bx, by, cx, cy, p.x, p.y) && area(p.prev, p, p.next) >= 0) return false;
+	            pointInTriangleExceptFirst(ax, ay, bx, by, cx, cy, p.x, p.y) && area(p.prev, p, p.next) >= 0) return false;
 	        p = p.prevZ;
 
 	        if (n.x >= x0 && n.x <= x1 && n.y >= y0 && n.y <= y1 && n !== a && n !== c &&
-	            pointInTriangle(ax, ay, bx, by, cx, cy, n.x, n.y) && area(n.prev, n, n.next) >= 0) return false;
+	            pointInTriangleExceptFirst(ax, ay, bx, by, cx, cy, n.x, n.y) && area(n.prev, n, n.next) >= 0) return false;
 	        n = n.nextZ;
 	    }
 
 	    // look for remaining points in decreasing z-order
 	    while (p && p.z >= minZ) {
 	        if (p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1 && p !== a && p !== c &&
-	            pointInTriangle(ax, ay, bx, by, cx, cy, p.x, p.y) && area(p.prev, p, p.next) >= 0) return false;
+	            pointInTriangleExceptFirst(ax, ay, bx, by, cx, cy, p.x, p.y) && area(p.prev, p, p.next) >= 0) return false;
 	        p = p.prevZ;
 	    }
 
 	    // look for remaining points in increasing z-order
 	    while (n && n.z <= maxZ) {
 	        if (n.x >= x0 && n.x <= x1 && n.y >= y0 && n.y <= y1 && n !== a && n !== c &&
-	            pointInTriangle(ax, ay, bx, by, cx, cy, n.x, n.y) && area(n.prev, n, n.next) >= 0) return false;
+	            pointInTriangleExceptFirst(ax, ay, bx, by, cx, cy, n.x, n.y) && area(n.prev, n, n.next) >= 0) return false;
 	        n = n.nextZ;
 	    }
 
@@ -19618,7 +19660,7 @@
 	        queue.push(getLeftmost(list));
 	    }
 
-	    queue.sort(compareX);
+	    queue.sort(compareXYSlope);
 
 	    // process holes from left to right
 	    for (let i = 0; i < queue.length; i++) {
@@ -19628,11 +19670,22 @@
 	    return outerNode;
 	}
 
-	function compareX(a, b) {
-	    return a.x - b.x;
+	function compareXYSlope(a, b) {
+	    let result = a.x - b.x;
+	    // when the left-most point of 2 holes meet at a vertex, sort the holes counterclockwise so that when we find
+	    // the bridge to the outer shell is always the point that they meet at.
+	    if (result === 0) {
+	        result = a.y - b.y;
+	        if (result === 0) {
+	            const aSlope = (a.next.y - a.y) / (a.next.x - a.x);
+	            const bSlope = (b.next.y - b.y) / (b.next.x - b.x);
+	            result = aSlope - bSlope;
+	        }
+	    }
+	    return result;
 	}
 
-	// find a bridge between vertices that connects hole with an outer ring and and link it
+	// find a bridge between vertices that connects hole with an outer ring and link it
 	function eliminateHole(hole, outerNode) {
 	    const bridge = findHoleBridge(hole, outerNode);
 	    if (!bridge) {
@@ -19656,8 +19709,11 @@
 
 	    // find a segment intersected by a ray from the hole's leftmost point to the left;
 	    // segment's endpoint with lesser x will be potential connection point
+	    // unless they intersect at a vertex, then choose the vertex
+	    if (equals(hole, p)) return p;
 	    do {
-	        if (hy <= p.y && hy >= p.next.y && p.next.y !== p.y) {
+	        if (equals(hole, p.next)) return p.next;
+	        else if (hy <= p.y && hy >= p.next.y && p.next.y !== p.y) {
 	            const x = p.x + (hy - p.y) * (p.next.x - p.x) / (p.next.y - p.y);
 	            if (x <= hx && x > qx) {
 	                qx = x;
@@ -19813,9 +19869,14 @@
 	           (bx - px) * (cy - py) >= (cx - px) * (by - py);
 	}
 
+	// check if a point lies within a convex triangle but false if its equal to the first point of the triangle
+	function pointInTriangleExceptFirst(ax, ay, bx, by, cx, cy, px, py) {
+	    return !(ax === px && ay === py) && pointInTriangle(ax, ay, bx, by, cx, cy, px, py);
+	}
+
 	// check if a diagonal between two polygon nodes is valid (lies in polygon interior)
 	function isValidDiagonal(a, b) {
-	    return a.next.i !== b.i && a.prev.i !== b.i && !intersectsPolygon(a, b) && // dones't intersect other edges
+	    return a.next.i !== b.i && a.prev.i !== b.i && !intersectsPolygon(a, b) && // doesn't intersect other edges
 	           (locallyInside(a, b) && locallyInside(b, a) && middleInside(a, b) && // locally visible
 	            (area(a.prev, a, b.prev) || area(a, b.prev, b)) || // does not create opposite-facing sectors
 	            equals(a, b) && area(a.prev, a, a.next) > 0 && area(b.prev, b, b.next) > 0); // special zero-length case
@@ -20604,8 +20665,11 @@
 	  return bluebirdExports.Promise.map(
 	    mtlPaths,
 	    function (mtlPath) {
-	      // mtlPath = normalizeMtlPath(mtlPath, objDirectory);
-	      const shallowPath = path.join(objDirectory, path.basename(mtlPath));
+	      // Resolve the mtl path against the obj directory, keeping URLs intact.
+	      // The node path module is not usable here in the browser because
+	      // path.resolve prepends process.cwd() and collapses the `//` in URLs.
+	      mtlPath = resolvePath(mtlPath, objDirectory);
+	      const shallowPath = resolvePath(path.basename(mtlPath), objDirectory);
 	      // if (options.secure && outsideDirectory(mtlPath, objDirectory)) {
 	      //   // Try looking for the .mtl in the same directory as the obj
 	      //   options.logger(
@@ -20623,15 +20687,15 @@
 	      //     });
 	      // }
 
-	      return loadMtl(shallowPath, options)
-	        // .catch(function (error) {
-	        //   // Try looking for the .mtl in the same directory as the obj
-	        //   options.logger(error.message);
-	        //   options.logger(
-	        //     `Could not read material file at ${mtlPath}. Attempting to read the material file from within the obj directory instead.`,
-	        //   );
-	        //   return loadMtl(shallowPath, options);
-	        // })
+	      return loadMtl(mtlPath, options)
+	        .catch(function (error) {
+	          // Try looking for the .mtl in the same directory as the obj
+	          options.logger(error.message);
+	          options.logger(
+	            `Could not read material file at ${mtlPath}. Attempting to read the material file from within the obj directory instead.`,
+	          );
+	          return loadMtl(shallowPath, options);
+	        })
 	        .then(function (materialsInMtl) {
 	          materials = materials.concat(materialsInMtl);
 	        })
