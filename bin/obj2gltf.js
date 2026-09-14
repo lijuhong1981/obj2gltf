@@ -7788,31 +7788,34 @@
 	  const length = this.length;
 	  const typedArray = this.typedArray;
 	  const paddedLength = length + (length % 2 === 0 ? 0 : 1); // Round to next multiple of 2
-	  const buffer = Buffer.alloc(paddedLength * sizeOfUint16);
+	  const arrayBuffer = new ArrayBuffer(paddedLength * sizeOfUint16);
+	  const dataView = new DataView(arrayBuffer);
 	  for (let i = 0; i < length; ++i) {
-	    buffer.writeUInt16LE(typedArray[i], i * sizeOfUint16);
+	    dataView.setUint16(i * sizeOfUint16, typedArray[i], true); // little-endian
 	  }
-	  return buffer;
+	  return new Uint8Array(arrayBuffer);
 	};
 
 	ArrayStorage.prototype.toUint32Buffer = function () {
 	  const length = this.length;
 	  const typedArray = this.typedArray;
-	  const buffer = Buffer.alloc(length * sizeOfUint32);
+	  const arrayBuffer = new ArrayBuffer(length * sizeOfUint32);
+	  const dataView = new DataView(arrayBuffer);
 	  for (let i = 0; i < length; ++i) {
-	    buffer.writeUInt32LE(typedArray[i], i * sizeOfUint32);
+	    dataView.setUint32(i * sizeOfUint32, typedArray[i], true); // little-endian
 	  }
-	  return buffer;
+	  return new Uint8Array(arrayBuffer);
 	};
 
 	ArrayStorage.prototype.toFloatBuffer = function () {
 	  const length = this.length;
 	  const typedArray = this.typedArray;
-	  const buffer = Buffer.alloc(length * sizeOfFloat);
+	  const arrayBuffer = new ArrayBuffer(length * sizeOfFloat);
+	  const dataView = new DataView(arrayBuffer);
 	  for (let i = 0; i < length; ++i) {
-	    buffer.writeFloatLE(typedArray[i], i * sizeOfFloat);
+	    dataView.setFloat32(i * sizeOfFloat, typedArray[i], true); // little-endian
 	  }
-	  return buffer;
+	  return new Uint8Array(arrayBuffer);
 	};
 
 	ArrayStorage.prototype.getMinMax = function (components) {
@@ -10183,8 +10186,7 @@
 	      const sourceY = Math.round(y * heightRatio);
 	      const sourceX = Math.round(x * widthRatio);
 	      const sourceIndex = sourceY * sourceWidth + sourceX;
-	      const sourceValue = sourcePixels.readUInt8(sourceIndex);
-	      targetPixels.writeUInt8(sourceValue, targetIndex);
+	      targetPixels[targetIndex] = sourcePixels[sourceIndex];
 	    }
 	  }
 	  return targetPixels;
@@ -10212,14 +10214,13 @@
 	      !defined(scratchResizeChannel) ||
 	      sourcePixelsLength > scratchResizeChannel.length
 	    ) {
-	      scratchResizeChannel = Buffer.alloc(sourcePixelsLength);
+	      scratchResizeChannel = new Uint8Array(sourcePixelsLength);
 	    }
 	    sourceChannel = scratchResizeChannel;
 	  }
 
 	  for (let i = 0; i < sourcePixelsLength; ++i) {
-	    const value = pixels.readUInt8(i * 4 + index);
-	    sourceChannel.writeUInt8(value, i);
+	    sourceChannel[i] = pixels[i * 4 + index];
 	  }
 
 	  if (sourcePixelsLength > targetPixelsLength) {
@@ -10239,8 +10240,7 @@
 	function writeChannel(pixels, channel, index) {
 	  const pixelsLength = pixels.length / 4;
 	  for (let i = 0; i < pixelsLength; ++i) {
-	    const value = channel.readUInt8(i);
-	    pixels.writeUInt8(value, i * 4 + index);
+	    pixels[i * 4 + index] = channel[i];
 	  }
 	}
 
@@ -10268,7 +10268,7 @@
 	}
 
 	function isChannelSingleColor(buffer) {
-	  const first = buffer.readUInt8(0);
+	  const first = buffer[0];
 	  const length = buffer.length;
 	  for (let i = 1; i < length; ++i) {
 	    if (buffer[i] !== first) {
@@ -10306,8 +10306,8 @@
 	  const width = dimensions[0];
 	  const height = dimensions[1];
 	  const pixelsLength = width * height;
-	  const pixels = Buffer.alloc(pixelsLength * 4, 0xff); // Initialize with 4 channels
-	  const scratchChannel = Buffer.alloc(pixelsLength);
+	  const pixels = new Uint8Array(pixelsLength * 4).fill(0xff); // Initialize with 4 channels
+	  const scratchChannel = new Uint8Array(pixelsLength);
 
 	  // Write into the R, G, B channels
 	  const redChannel = getTextureChannel(
@@ -10416,8 +10416,8 @@
 	  const width = dimensions[0];
 	  const height = dimensions[1];
 	  const pixelsLength = width * height;
-	  const pixels = Buffer.alloc(pixelsLength * 4, 0xff); // Initialize with 4 channels, unused channels will be white
-	  const scratchChannel = Buffer.alloc(pixelsLength);
+	  const pixels = new Uint8Array(pixelsLength * 4).fill(0xff); // Initialize with 4 channels, unused channels will be white
+	  const scratchChannel = new Uint8Array(pixelsLength);
 
 	  if (packMetallic) {
 	    // Write into the B channel
@@ -10512,8 +10512,8 @@
 	  const width = dimensions[0];
 	  const height = dimensions[1];
 	  const pixelsLength = width * height;
-	  const pixels = Buffer.alloc(pixelsLength * 4, 0xff); // Initialize with 4 channels, unused channels will be white
-	  const scratchChannel = Buffer.alloc(pixelsLength);
+	  const pixels = new Uint8Array(pixelsLength * 4).fill(0xff); // Initialize with 4 channels, unused channels will be white
+	  const scratchChannel = new Uint8Array(pixelsLength);
 
 	  if (packSpecular) {
 	    // Write into the R, G, B channels
@@ -20870,9 +20870,36 @@
 	  if (remainder === 0) {
 	    return buffer;
 	  }
-	  const padding = remainder === 0 ? 0 : boundary - remainder;
-	  const emptyBuffer = Buffer.alloc(padding);
-	  return Buffer.concat([buffer, emptyBuffer]);
+	  const padded = new Uint8Array(byteLength + (boundary - remainder));
+	  padded.set(buffer);
+	  return padded;
+	}
+
+	// module.exports = concatBytes;
+
+	/**
+	 * Concatenate byte arrays into a single Uint8Array. Replacement for
+	 * Buffer.concat so the library runs in the browser without a polyfill.
+	 *
+	 * @param {Uint8Array[]} arrays The byte arrays to concatenate.
+	 * @returns {Uint8Array} The concatenated byte array.
+	 *
+	 * @private
+	 */
+	function concatBytes(arrays) {
+	  const length = arrays.length;
+	  let totalLength = 0;
+	  for (let i = 0; i < length; ++i) {
+	    totalLength += arrays[i].length;
+	  }
+
+	  const result = new Uint8Array(totalLength);
+	  let offset = 0;
+	  for (let i = 0; i < length; ++i) {
+	    result.set(arrays[i], offset);
+	    offset += arrays[i].length;
+	  }
+	  return result;
 	}
 
 	const getDefaultMaterial = loadMtl.getDefaultMaterial;
@@ -21055,7 +21082,7 @@
 	    bufferState.uvBuffers,
 	    bufferState.indexBuffers,
 	  );
-	  const buffer = getBufferPadded(Buffer.concat(buffers));
+	  const buffer = getBufferPadded(concatBytes(buffers));
 
 	  gltf.buffers.push({
 	    name: name,
@@ -21616,6 +21643,20 @@
 	  });
 	}
 
+	function toBase64(bytes) {
+	  // Chunked conversion avoids call stack limits for large buffers
+	  let binary = "";
+	  const chunkSize = 0x8000;
+	  const length = bytes.length;
+	  for (let i = 0; i < length; i += chunkSize) {
+	    binary += String.fromCharCode.apply(
+	      null,
+	      bytes.subarray(i, Math.min(i + chunkSize, length)),
+	    );
+	  }
+	  return btoa(binary);
+	}
+
 	function encodePng(texture) {
 	  // Constants defined by pngjs
 	  const rgbColorType = 2;
@@ -21638,7 +21679,7 @@
 	      chunks.push(chunk);
 	    });
 	    stream.on("end", function () {
-	      resolve(Buffer.concat(chunks));
+	      resolve(concatBytes(chunks));
 	    });
 	    stream.on("error", reject);
 	  });
@@ -21727,16 +21768,15 @@
 	  const buffer = gltf.buffers[0];
 	  const source = buffer.extras._obj2gltf.source;
 
-	  // Buffers larger than ~192MB cannot be base64 encoded due to a NodeJS limitation. Source: https://github.com/nodejs/node/issues/4266
+	  // Embedding very large buffers requires a large amount of memory (the base64 string
+	  // plus the intermediate binary string), so keep a sane limit.
 	  if (source.length > 201326580) {
 	    throw new RuntimeError(
 	      "Buffer is too large to embed in the glTF. Use the --separate flag instead.",
 	    );
 	  }
 
-	  buffer.uri = `data:application/octet-stream;base64,${source.toString(
-    "base64",
-  )}`;
+	  buffer.uri = `data:application/octet-stream;base64,${toBase64(source)}`;
 	}
 
 	// module.exports = obj2gltf;
