@@ -15,9 +15,13 @@
   },
   "keywords": [
     "obj",
+    "obj2gltf",
     "gltf",
+    "glb",
     "cesium",
-    "webgl",
+    "3d",
+    "model",
+    "converter",
     "browser"
   ],
   "author": "",
